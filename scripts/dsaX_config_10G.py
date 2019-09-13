@@ -346,6 +346,7 @@ def initialise(SNAP):
 
     fpga.write_int('sel1',2)
     time.sleep(0.1)
+    # TODO: magic number: what is 18000?
     fpga.write_int('coeff1',18000)
     time.sleep(0.1)
     
@@ -808,7 +809,7 @@ def rawlevels(SNAP,get):
     c3 = (coeff*rmsval/c3).astype('uint32')
     c2 = (coeff*rmsval/c2).astype('uint32')
     c1 = (coeff*rmsval/c1).astype('uint32')
-        
+    # TODO: magic number 2048. ?? 2*channels_per_sideband ??    
     coeffs = np.ones(2048,'I')*c1
     write_coeffs = struct.pack('>2048I',*coeffs)
     fpga.write('eq_3_coeffs',write_coeffs);

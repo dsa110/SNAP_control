@@ -1,0 +1,82 @@
+adc_samples_per_spectra: 8192
+channels_per_sideband: 1024
+fft_shift_noise: 1023
+delay_filename: /mnt/nfs/runtime/delays.dat
+utc_start_filename: /mnt/nfs/runtime/UTC_START.txt
+fpgq_bof: dsa_10gv11s.bof
+snap:
+  - id: 1
+    ip: 10.10.1.2
+    adc_demux: 2
+    adc_gain: 5
+    - src_ip_base: 10.10.5.2
+      src_port: 4002
+    - src_ip_base: 10.10.3.2
+      src_port: 4002
+    - dest_ip: 10.10.5.1
+      dest_mac: 40175247655025 # 24:8a:07:5d:80:71 // ens6d1 on dsamaster
+      dest_port: 4011
+    - dest_ip: 10.10.3.1
+      dest_mac: 40175247654465 # 24:8a:07:5d:7e:41 ens6d1 on dsa5
+      dest_port: 4011
+    coeff_filename: /mnt/nfs/runtime/snap1_coeffs.dat
+  - id: 2
+    ip: 10.10.1.3
+    adc_demux: 2
+    adc_gain: 5
+    - src_ip_base: 10.10.6.2
+      src_port: 4002
+    - src_ip_base: 10.10.3.3
+      src_port: 4003
+    - dest_ip: 10.10.6.1
+      dest_mac: 40175247654497 # 24:8a:07:5d:7e:61 ens6d1 on dsa1 
+      dest_port: 4011
+    - dest_ip: 10.10.3.1
+      dest_mac: 40175247654465 # 24:8a:07:5d:7e:41 ens6d1 on dsa5
+      dest_port: 4012
+    coeff_filename: /mnt/nfs/runtime/snap2_coeffs.dat
+  - id: 3
+    ip: 10.10.1.4
+    adc_demux: 2
+    adc_gain: 5
+    - src_ip_base: 10.10.7.2
+      src_port: 4002
+    - src_ip_base: 10.10.3.4
+      src_port: 4004
+    - dest_ip: 10.10.7.1
+      dest_mac: 137432781157265 # 7c:fe:90:19:f3:91 ens6d1 on dsa2
+      dest_port: 4011
+    - dest_ip: 10.10.3.1
+      dest_mac: 40175247654465 # 24:8a:07:5d:7e:41 ens6d1 on dsa5
+      dest_port: 4013
+    coeff_filename: /mnt/nfs/runtime/snap3_coeffs.dat
+  - id: 4
+    ip: 10.10.1.5
+    adc_demux: 2
+    adc_gain: 5
+    - src_ip_base: 10.10.8.2
+      src_port: 4002
+    - src_ip_base: 10.10.3.5
+      src_port: 4005
+    - dest_ip: 10.10.8.1
+      dest_mac: 137432781157249 # 7c:fe:90:19:f3:81 ens6d1 on dsa3 
+      dest_port: 4011
+    - dest_ip: 10.10.3.1
+      dest_mac: 40175247654465 # 24:8a:07:5d:7e:41 ens6d1 on dsa5
+      dest_port: 4014
+    coeff_filename: /mnt/nfs/runtime/snap4_coeffs.dat
+  - id: 5
+    ip: 10.10.1.6
+    adc_demux: 2
+    adc_gain: 5
+    - src_ip_base: 10.10.9.2
+      src_port: 4002
+    - src_ip_base: 10.10.3.6
+      src_port: 4006
+    - dest_ip: 10.10.9.1
+      dest_mac: 137432781168273 # 7c:fe:90:1a:1e:91 ens6d1 on dsa4 
+      dest_port: 4011
+    - dest_ip: 10.10.3.1
+      dest_mac: 40175247654465 # 24:8a:07:5d:7e:41 ens6d1 on dsa5
+      dest_port: 4015
+    coeff_filename: /mnt/nfs/runtime/snap5_coeffs.dat
