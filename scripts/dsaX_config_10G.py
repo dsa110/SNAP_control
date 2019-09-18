@@ -1,6 +1,7 @@
 import katcp,corr,numpy as np,struct,time,datetime,sys,socket,os,pause
 import matplotlib.pyplot as plt
 from astropy.time import Time
+import snap_util as su
 
 def config10g(SNAP):
     
@@ -32,7 +33,8 @@ def config10g(SNAP):
 
     # arp table stuff
     mac_base0 = (2<<40) + (2<<32)
-    dest_macff= 255*(2**40) + 255*(2**32) + 255*(2**24) + 255*(2**16) + 255*(2**8) + 255 
+    # dest_macff= 255*(2**40) + 255*(2**32) + 255*(2**24) + 255*(2**16) + 255*(2**8) + 255
+    dest_macff = su.fpgs_encode_mac('ff:ff:ff:ff:ff:ff')
     arp_table = [dest_macff for i in range(256)]
     arp_table1 = [0 for i in range(256)]
     
