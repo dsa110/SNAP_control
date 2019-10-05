@@ -1,9 +1,36 @@
+# snaps define which snaps to instantiate etcd services for.
+# each service will then load the specific info listed under
+# snap: below.
+snaps:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+
+# parameter common to all snaps
 adc_samples_per_spectra: 8192
 channels_per_sideband: 1024
 fft_shift_noise: 1023
 delay_filename: /mnt/nfs/runtime/delays.dat
 utc_start_filename: /mnt/nfs/runtime/UTC_START.txt
 fpga_bof: dsa_10gv11s.bof
+
+# parameters for the adc16 class
+adc16:
+  katcp_port: 7147
+  verbosity: true
+  test_pattern: deskew
+  demux_mode: 2
+  gain: 5
+  chips:
+    - 'a'
+    - 'b'
+    - 'c'
+  skip_flag: true
+  bof: dsa_10gv11s.bof
+
+# SNAP specific parameters.
 snap:
   1:
     ip: 10.10.1.2
@@ -24,6 +51,7 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4011
     coeff_filename: /mnt/nfs/runtime/snap1_coeffs.dat
+    calc_coeff_host: local
   2:
     ip: 10.10.1.3
     adc_demux: 2
@@ -43,6 +71,8 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4012
     coeff_filename: /mnt/nfs/runtime/snap2_coeffs.dat
+    calc_coeff_host: dsa1
+    calc_coeff_cmd: /mnt/nfs/code/calc_coefficients
   3:
     ip: 10.10.1.4
     adc_demux: 2
@@ -62,6 +92,8 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4013
     coeff_filename: /mnt/nfs/runtime/snap3_coeffs.dat
+    calc_coeff_host: dsa2
+    calc_coeff_cmd: /mnt/nfs/code/calc_coefficients
   4:
     ip: 10.10.1.5
     adc_demux: 2
@@ -81,6 +113,8 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4014
     coeff_filename: /mnt/nfs/runtime/snap4_coeffs.dat
+    calc_coeff_host: dsa3
+    calc_coeff_cmd: /mnt/nfs/code/calc_coefficients
   5:
     ip: 10.10.1.6
     adc_demux: 2
@@ -100,3 +134,5 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4015
     coeff_filename: /mnt/nfs/runtime/snap5_coeffs.dat
+    calc_coeff_host: dsa4
+    calc_coeff_cmd: /mnt/nfs/code/calc_coefficients

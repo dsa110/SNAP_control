@@ -144,7 +144,7 @@ class ADC16():#katcp.RoachClient):
 		"""
 		Construct an adc16 instance. allowed kwargs are ....
 		"""
-		if kwargs['verbosity'] == True:
+		if 'verbosity' in kwargs and kwargs['verbosity'] == True:
 			logging.basicConfig(level = logging.DEBUG)
 		else:
 			logging.basicConfig(level = logging.INFO)

@@ -14,6 +14,8 @@ class TestSnap(unittest.TestCase):
 
         super(TestSnap, self).__init__(*args, **kwargs)
 
+        self.snap_config2 = {'snaps': [1, 2, 3, 4, 5], 'adc_samples_per_spectra': 8192, 'delay_filename': '/mnt/nfs/runtime/delays.dat', 'adc16': {'test_pattern': 'deskew', 'verbosity': True, 'katcp_port': 7147, 'demux_mode': 2, 'gain': 5, 'skip_flag': True, 'chips': ['a', 'b', 'c'], 'bof': 'dsa_10gv11s.bof'}, 'fft_shift_noise': 1023, 'fpga_bof': 'dsa_10gv11s.bof', 'utc_start_filename': '/mnt/nfs/runtime/UTC_START.txt', 'snap': {1: {'dest': [{'ip': '10.10.5.1', 'mac': '24:8a:07:5d:80:71', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4011}], 'src': [{'ip_base': '10.10.5.2', 'port': 4002}, {'ip_base': '10.10.3.2', 'port': 4002}], 'calc_coeff_host': 'local', 'adc_gain': 5, 'ip': '10.10.1.2', 'adc_demux': 2, 'coeff_filename': '/mnt/nfs/runtime/snap1_coeffs.dat'}, 2: {'src': [{'ip_base': '10.10.6.2', 'port': 4002}, {'ip_base': '10.10.3.3', 'port': 4003}], 'adc_gain': 5, 'ip': '10.10.1.3', 'adc_demux': 2, 'dest': [{'ip': '10.10.6.1', 'mac': '24:8a:07:5d:7e:61', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4012}], 'calc_coeff_host': 'dsa1', 'calc_coeff_cmd': '/mnt/nfs/code/calc_coefficients', 'coeff_filename': '/mnt/nfs/runtime/snap2_coeffs.dat'}, 3: {'src': [{'ip_base': '10.10.7.2', 'port': 4002}, {'ip_base': '10.10.3.4', 'port': 4004}], 'adc_gain': 5, 'ip': '10.10.1.4', 'adc_demux': 2, 'dest': [{'ip': '10.10.7.1', 'mac': '7c:fe:90:19:f3:91', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4013}], 'calc_coeff_host': 'dsa2', 'calc_coeff_cmd': '/mnt/nfs/code/calc_coefficients', 'coeff_filename': '/mnt/nfs/runtime/snap3_coeffs.dat'}, 4: {'src': [{'ip_base': '10.10.8.2', 'port': 4002}, {'ip_base': '10.10.3.5', 'port': 4005}], 'adc_gain': 5, 'ip': '10.10.1.5', 'adc_demux': 2, 'dest': [{'ip': '10.10.8.1', 'mac': '7c:fe:90:19:f3:81', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4014}], 'calc_coeff_host': 'dsa3', 'calc_coeff_cmd': '/mnt/nfs/code/calc_coefficients', 'coeff_filename': '/mnt/nfs/runtime/snap4_coeffs.dat'}, 5: {'src': [{'ip_base': '10.10.9.2', 'port': 4002}, {'ip_base': '10.10.3.6', 'port': 4006}], 'adc_gain': 5, 'ip': '10.10.1.6', 'adc_demux': 2, 'dest': [{'ip': '10.10.9.1', 'mac': '7c:fe:90:1a:1e:91', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4015}], 'calc_coeff_host': 'dsa4', 'calc_coeff_cmd': '/mnt/nfs/code/calc_coefficients', 'coeff_filename': '/mnt/nfs/runtime/snap5_coeffs.dat'}}, 'channels_per_sideband': 1024}
+        
         self.snap_config = {'fft_shift_noise': 1023, 'fpga_bof': 'dsa_10gv11s.bof', 'adc_samples_per_spectra': 8192, 'utc_start_filename': '/mnt/nfs/runtime/UTC_START.txt', 'snap': {1: {'dest': [{'ip': '10.10.5.1', 'mac': '24:8a:07:5d:80:71', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4011}], 'src': [{'ip_base': '10.10.5.2', 'port': 4002}, {'ip_base': '10.10.3.2', 'port': 4002}], 'adc_gain': 5, 'ip': '10.10.1.2', 'adc_demux': 2, 'coeff_filename': '/mnt/nfs/runtime/snap1_coeffs.dat'}, 2: {'dest': [{'ip': '10.10.6.1', 'mac': '24:8a:07:5d:7e:61', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4012}], 'src': [{'ip_base': '10.10.6.2', 'port': 4002}, {'ip_base': '10.10.3.3', 'port': 4003}], 'adc_gain': 5, 'ip': '10.10.1.3', 'adc_demux': 2, 'coeff_filename': '/mnt/nfs/runtime/snap2_coeffs.dat'}, 3: {'dest': [{'ip': '10.10.7.1', 'mac': '7c:fe:90:19:f3:91', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4013}], 'src': [{'ip_base': '10.10.7.2', 'port': 4002}, {'ip_base': '10.10.3.4', 'port': 4004}], 'adc_gain': 5, 'ip': '10.10.1.4', 'adc_demux': 2, 'coeff_filename': '/mnt/nfs/runtime/snap3_coeffs.dat'}, 4: {'dest': [{'ip': '10.10.8.1', 'mac': '7c:fe:90:19:f3:81', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4014}], 'src': [{'ip_base': '10.10.8.2', 'port': 4002}, {'ip_base': '10.10.3.5', 'port': 4005}], 'adc_gain': 5, 'ip': '10.10.1.5', 'adc_demux': 2, 'coeff_filename': '/mnt/nfs/runtime/snap4_coeffs.dat'}, 5: {'dest': [{'ip': '10.10.9.1', 'mac': '7c:fe:90:1a:1e:91', 'port': 4011}, {'ip': '10.10.3.1', 'mac': '24:8a:07:5d:7e:41', 'port': 4015}], 'src': [{'ip_base': '10.10.9.2', 'port': 4002}, {'ip_base': '10.10.3.6', 'port': 4006}], 'adc_gain': 5, 'ip': '10.10.1.6', 'adc_demux': 2, 'coeff_filename': '/mnt/nfs/runtime/snap5_coeffs.dat'}}, 'delay_filename': '/mnt/nfs/runtime/delays.dat', 'channels_per_sideband': 1024}
 
         self.src_ip_base0 = ['0.0.0.0',
@@ -68,7 +70,20 @@ class TestSnap(unittest.TestCase):
 
         adc_gain = 5
         adc_demux = 2
+        adc16 = {}
+        adc16['katcp_port'] = 7147
+        adc16['verbosity'] = True
+        adc16['test_pattern'] = 'deskew'
+        adc16['demux_mode'] = 2
+        adc16['gain'] = 5
+        adc16['chips'] = ['a', 'b', 'c']
+        adc16['skip_flag'] = True
+        adc16['bof'] = 'dsa_10gv11s.bof'
+        
 
+        # which snaps to instantiate as processes
+        snaps = [1, 2, 3, 4, 5]
+        
         # index refers to SNAP number.
         ip_snap = ['',
                    '10.10.1.2',
@@ -108,10 +123,11 @@ class TestSnap(unittest.TestCase):
 
         snap_config = su.read_yaml("snapConfigTest.yml")
         self.assertNotEqual(snap_config, None)
-        self.assertEqual(snap_config, self.snap_config)
+        self.assertEqual(snap_config, self.snap_config2)
         self.assertEqual(snap_config['fft_shift_noise'], 1023)
         self.assertEqual(snap_config['fpga_bof'], 'dsa_10gv11s.bof')
         self.assertEqual(snap_config['adc_samples_per_spectra'], 8192)
+        self.assertEqual(set(snap_config['snaps']), set(snaps))
         for snap_no, _ in snap_config['snap'].items():
             snap = snap_config['snap'][snap_no]
             self.assertEqual(snap['adc_gain'], adc_gain)
@@ -143,6 +159,10 @@ class TestSnap(unittest.TestCase):
                 else:
                     # catch when config is extended and no test case for it.
                     self.assertEqual(idx, 1)
+
+            # check adc16 parameters
+            for key, val in snap_config['adc16'].items():
+                self.assertEqual(val, adc16[key])
 
     def test_fpga_encode_mac(self):
         """ test converting human readable MAC into binary
