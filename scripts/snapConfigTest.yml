@@ -9,12 +9,14 @@ snaps:
   - 5
 
 # parameter common to all snaps
-adc_samples_per_spectra: 8192
-channels_per_sideband: 1024
-fft_shift_noise: 1023
-delay_filename: /mnt/nfs/runtime/delays.dat
-utc_start_filename: /mnt/nfs/runtime/UTC_START.txt
-fpga_bof: dsa_10gv11s.bof
+common:
+  adc_samples_per_spectra: 8192
+  channels_per_sideband: 1024
+  fft_shift_noise: 1023
+  acc_len: 255
+  delay_filename: /mnt/nfs/runtime/delays.dat
+  utc_start_filename: /mnt/nfs/runtime/UTC_START.txt
+  fpga_bof: dsa_10gv11s.bof
 
 # parameters for the adc16 class
 adc16:

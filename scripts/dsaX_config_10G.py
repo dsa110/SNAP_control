@@ -2,7 +2,16 @@
 """
 import pytz
 import json
-import katcp,corr,numpy as np,struct,time,datetime,sys,socket,os,pause
+import katcp
+import corr
+import numpy as np
+import struct
+import time
+import datetime
+import sys
+import socket
+import os
+import pause
 import matplotlib.pyplot as plt
 from astropy.time import Time
 import snap_util as su
@@ -11,43 +20,44 @@ from adc16 import ADC16
 class DsaXConfig:
     """ DsaXConfig is a class for handling SNAP configuration
     """
-    def __init__(self, snap_number, snap_ip):
+    def __init__(self, snap_number, snap_dict, common_dict, adc16_dict):
         self.snap_number = snap_number
         self.snap_index = snap_number - 1
-        self.snap_ip = snap_ip
+        self.snap_ip = snap_dict['ip']
+        self.fft_shift = common_dict['fft_shift_noise']
+        self.acc_len = common_dict['acc_len']
+        self.adc_samples_per_spectra = common_dict['adc_samples_per_spectra']
+        self.channels_per_sideband = common_dict['channels_per_sideband']
+        self.delay_filename = common_dict['delay_filename']
+        self.utc_start_filename = common_dict['utc_start_filename']
         self.wait_for_connect_time_in_seconds = 2.0
-        self.src_ip_base = [None, None]
-        self.src_port = None
-        self.dest_ip = [None, None]
-        self.dest_mac = [None, None]
-        self.dest_port = [None, None]
+        self.wait_for_config_in_seconds = 3.0
+        self.src_ip_base = [snap_dict['src'][0]['ip_base'], snap_dict['src'][1]['ip_base']]
+        self.src_port = [snap_dict['src'][0]['port'], snap_dict['src'][1]['port']]
+        self.dest_ip = [snap_dict['dest'][0]['ip'], snap_dict['dest'][1]['ip']]
+        self.dest_mac = [snap_dict['dest'][0]['mac'], snap_dict['dest'][1]['mac']]
+        self.dest_port = [snap_dict['dest'][0]['port'], snap_dict['dest'][1]['port']]
+        self.coeff_filename(snap_dict['coeff_filename'])
+        self.calc_coeff_host = snap_dict['calc_coeff_host']
         self.mac_broadcast = 'ff:ff:ff:ff:ff:ff'
         self.mac_base0 = '02:02:00:00:00:00'
         self.mac_size = 256
         self.min_ip_idx = 0
-        self.max_ip_idx = len(snap_ip)
+        self.max_ip_idx = len(self.snap_ip)
         self.min_mac_idx = 0
         self.max_mac_idx = len(self.mac_base0)
         # snap has not been programmed, initialized.
         self.programmed = False
         self.initialized = False
-        self.adc16 = {}
-
-    def init_commands(self):
-        # COMMANDS
+        self.armed = False
+        self.adc16 = adc16_dict
+        self.armed_mjd = 0.0
+        self.armed_utc = "1970-01-01T00:00:00.0Z"
         self.known_commands = {}
-        known_commands['prog'] = self.prog()
-        known_commands['init'] = self.initialize()
+        self.known_commands['prog'] = self.prog
+        self.known_commands['init'] = self.initialize
+        self.known_commands['arm'] = self.reg_arm
 
-    def adc16(self, adc16):
-        """ Set the adc16 dictionary which contains parameters
-        specifically for the adc16 class.
-
-        :param adc16: Dictionary with parameter for the adc16 class
-        :type adc16: Dictionary
-        """
-        self.adc16 = adc16
-        
     def bof(self, bof):
         """ Set the FPGA bof file.
 
@@ -184,12 +194,12 @@ class DsaXConfig:
 
         # arp table stuff
         # 2<<40) + (2<<32)
+
         mac_base0 = su.fpga_encode_mac(self.mac_base0)
         # dest_macff= 255*(2**40) + 255*(2**32) + 255*(2**24) + 255*(2**16) + 255*(2**8) + 255
-        dest_macff = su.fpgs_encode_mac(self.mac_broadcast)
+        dest_macff = su.fpga_encode_mac(self.mac_broadcast)
         arp_table = [dest_macff for i in range(self.mac_size)]
         arp_table1 = [0 for i in range(self.mac_size)]
-
 
         # defaults for snap-side
         # 10*(2**24) + 10*(2**16) + 5*(2**8) + 2
@@ -202,13 +212,13 @@ class DsaXConfig:
         src_port1 = self.src_port[1]
 
         # 10*(2**24) + 10*(2**16) + 5*(2**8) + 1
-        dest_ip = su.fpga_encode_ip(self.dest_ip_dsa[0])
+        dest_ip = su.fpga_encode_ip(self.dest_ip[0])
         # 10*(2**24) + 10*(2**16) + 3*(2**8) + 1
-        dest_ip1 = su.fpga_encode_ip(self.dest_ip_dsa[1])
+        dest_ip1 = su.fpga_encode_ip(self.dest_ip[1])
         # 40175247655025 # 24:8a:07:5d:80:71 // ens6d1 on dsamaster
-        dest_mac = su.fpga_encode_mac(self.dest_mac_dsa[0])
+        dest_mac = su.fpga_encode_mac(self.dest_mac[0])
         # 40175247654465 # ens6d1 on dsa5
-        dest_mac1 = su.fpga_encode_mac(self.dest_mac_dsa[1])
+        dest_mac1 = su.fpga_encode_mac(self.dest_mac[1])
 
         dest_port = self.dest_port[0]
         dest_port1 = self.dest_port[1]
@@ -218,27 +228,27 @@ class DsaXConfig:
 
         arp_table[2] = src_mac
         arp_table[1] = dest_mac
-        arp_table1[2] = src_mac1
+        arp_table1[self.snap_number+1] = src_mac1
         arp_table1[1] = dest_mac1
 
         fpga = corr.katcp_wrapper.FpgaClient(self.snap_ip)
-        time.sleep(wait_for_connect_time_in_seconds)
+        time.sleep(self.wait_for_connect_time_in_seconds)
         
-        print('connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
+        print('dsaX_config_10G.config10g() connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
 
         # raw data flow
         fpga.config_10gbe_core('eth_gbe0', src_mac, src_ip_base,
                                src_port, arp_table)
         time.sleep(self.wait_for_config_in_seconds)  # 3 seconds
-        print( 'Configured 10gbe core - RAW')
-        print( fpga.print_10gbe_core_details('eth_gbe0'))
+        print( 'dsaX_config_10G.config10g() Configured 10gbe core - RAW')
+        fpga.print_10gbe_core_details('eth_gbe0')
 
         # accum data flow
         fpga.config_10gbe_core('eth1_gbe1',src_mac1, src_ip_base1,
                                src_port1, arp_table1)
         time.sleep(self.wait_for_config_in_seconds)
-        print( 'Configured 10gbe core - ACCUM')
-        print( fpga.print_10gbe_core_details('eth1_gbe1'))
+        print( 'dsaX_config_10G.config10g() Configured 10gbe core - ACCUM')
+        fpga.print_10gbe_core_details('eth1_gbe1')
 
         # write stuff to registers
         fpga.write_int('acc_len', self.acc_len); # 255
@@ -258,7 +268,7 @@ class DsaXConfig:
         fpga.write_int('eth1_ctrl',0);
         time.sleep(0.1)
 
-        print( 'All ready to go!')
+        print( 'dsaX_config_10G.config10g() All ready to go!')
 
     def adchist(self, cal_adc):
         """ Perform an ADC Histogram
@@ -369,16 +379,22 @@ class DsaXConfig:
         plt.show()
 
 
-    def initialise(self):
+    def initialize(self):
         """ Initialize the SNAP
         """
 
         # TODO: check needed  parameters have been set.
-        
+        print("dsaX_config_10G.initialize() Entering and connecting to fpga at address {}".format(self.snap_ip))
+
         # connect to FPGA
-        fpga = corr.katcp_wrapper.FpgaClient(self.snap_ip)
-        time.sleep(wait_for_connect_time_in_seconds)
-        print( 'connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
+        fpga = None
+        try:
+            fpga = corr.katcp_wrapper.FpgaClient(self.snap_ip)
+            time.sleep(self.wait_for_connect_time_in_seconds)
+            print( 'dsaX_config_10G.initialize() connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
+        except:
+            print("dsaX_config_10G.initialize(): error connecting to fpga")
+            raise
 
         # 2^12-1 is the largest shift
         fpga.write_int('fft_shift',self.fft_shift)
@@ -399,6 +415,7 @@ class DsaXConfig:
 
         # TODO: config10g also connects to the fpga. Where should this be done?
         #       should config10g be a private method?
+        print("dsaX_config_10G.initialize() Calling config10g()")
         self.config10g()
         self.initialized = True
 
@@ -474,12 +491,12 @@ class DsaXConfig:
         delt2 = datetime.timedelta(hours=7,seconds=1)
         myt = (now+delt+delt2).isoformat()
         t = Time(myt,format='isot',scale='utc')
-        # TODO: move filename to config file
-        f = open("/mnt/nfs/runtime/UTC_START.txt","w")
+        f = open(self.utc_start_filename,"w")
         f.write('{0}\n'.format(t.mjd))
         f.write('{0}\n'.format(myt))
         f.close()
-
+        self.armed_mjd = t.mjd
+        self.armed_utc = '{}.0Z'.format(myt)
         pause.until(now+delt)
         time.sleep(0.2)    
         f2.write_int('reg_arm',1)
@@ -530,6 +547,9 @@ class DsaXConfig:
         f.write('{0}\n'.format(t.mjd))
         f.write('{0}\n'.format(myt))
         f.close()
+        self.armed_mjd = t.mjd
+        # TODO: add ISO format correctly.
+        self.armed_utc = '{}.0Z'.format(myt)
 
         pause.until(now+delt)
         time.sleep(0.2)
@@ -546,6 +566,7 @@ class DsaXConfig:
 
         time.sleep(0.5)
         print( 'RAW DATA SW STATUS',bin(f1.read_int('eth_sw_status')))
+        self.armed = True
 
     def help(self):
 
@@ -557,7 +578,7 @@ class DsaXConfig:
 
         # connect to FPGA
         fpga = corr.katcp_wrapper.FpgaClient(self.snap_ip)
-        time.sleep(wait_for_connect_time_in_seconds)
+        time.sleep(self.wait_for_connect_time_in_seconds)
         print( 'connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
 
         get=1
@@ -602,7 +623,7 @@ class DsaXConfig:
 
         # connect to FPGA
         fpga = corr.katcp_wrapper.FpgaClient(self.snap_ip)
-        time.sleep(wait_for_connect_time_in_seconds)
+        time.sleep(self.wait_for_connect_time_in_seconds)
         print( 'connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
 
         # write initial coefficients
@@ -667,7 +688,8 @@ class DsaXConfig:
 
     def prog(self):
         self.adc16['host'] = self.snap_ip
-        my_adc16 = ADC16(**self.adc16)
+        print("dsaX_config_10G.prog() snap_ip= {} adc6= {}".format(self.snap_ip,self.adc16))
+        my_adc16 = ADC16(self.adc16)
         my_adc16.calibrate()
         self.programmed = True
 
@@ -676,15 +698,16 @@ class DsaXConfig:
         #adchist(SNAP,cal_adc)
         adchist(cal_adc)
 
-    def process(self, cmd):
+    def process(self, cmd_dict):
         """Convert etcd commands local commands.
 
         :param cmd: etcd value which is a dictionary 'Cmd' as the key
         :type: Dictionary
         """
-
-        command = cmd['Cmd']
-        command in self.known_commands and self.known_commands[command]
+        print("dsaX_config_10G.process(). cmd_dict= {}".format(cmd_dict))
+        cmd = cmd_dict['Cmd']
+        print("dsaX_config_10G.process(). cmd= {}".format(cmd))
+        cmd in self.known_commands and self.known_commands[cmd]()
 
     def get_monitor_data(self):
         """ Return monitor data in JSON format
@@ -695,10 +718,14 @@ class DsaXConfig:
         time = datetime.datetime.utcnow(). \
         replace(tzinfo=utc).isoformat()
         mon_data['time'] = time
-        mon_data['snap_num'] = self.snap_number
+        mon_data['number'] = self.snap_number
         mon_data['ip'] = self.snap_ip
-        mon_data['programmed'] = self.programmed
-        mon_data['initialized'] = self.initialized
+        mon_data['prog'] = self.programmed
+        mon_data['init'] = self.initialized
+        mon_data['armed'] = self.armed
+        mon_data['armed_mjd'] = self.armed_mjd
+        mon_data['armed_utc'] = self.armed_utc
+        mon_data['sim'] = False
 
         try:
             md_json = json.dumps(mon_data)

@@ -9,7 +9,7 @@ endpoints: ["192.168.1.132:2379"]
 timeout: "1s"
 # command to watch
 command: '/cmd/snap/'
-#antenna number
-ant_num: 1
+#snap number
+snap_num: 1
 #Simulation indicator(bool), True when in sim mode, False when using real hardware
 SIM: True

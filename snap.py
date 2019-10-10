@@ -97,15 +97,15 @@ def process_command(my_snap):
     """
 
     def a(event):
-        dprint("process_command() event= {}".format(event), 'INFO', DBG)
+        dprint("snap.py.process_command() process_command() event= {}".format(event), 'INFO', DBG)
         key = event.key.decode('utf-8')
         value = event.value.decode('utf-8')
-        dprint("key= {}, value= {}".format(key, value), 'INFO', DBG)
+        dprint("snap.py.process_command() key= {}, value= {}".format(key, value), 'INFO', DBG)
         # parse the JSON command
         cmd = parse_value(value)
         for key, val in cmd.items():
-            dprint("cmd key= {}, cmd val= {}".format(key, val), 'INFO', DBG)
-
+            dprint("snap.py.process_command() cmd key= {}, cmd val= {}".format(key, val), 'INFO', DBG)
+        dprint("snap.py.process_command() a: cmd= {}".format(cmd), 'INFO', DBG)
         my_snap.process(cmd)
     return a
 
@@ -123,10 +123,12 @@ def snap_run(args):
 
     my_snaps = []
     for snap_num in snap_params['snaps']:
-        my_snaps.append(DsaXConfig(snap_num, snap_params['snap'][snap_num]['ip']))
+        print("snap.py.snap_run() creatting process to handle snap: {}".format(snap_num))
+        my_snap = DsaXConfig(snap_num, snap_params['snap'][snap_num], snap_params['common'], snap_params['adc16'])
+        my_snaps.append(my_snap)
 
     etcd_host, etcd_port = parse_endpoint(etcd_params['endpoints'])
-    dprint("etcd host={}, etcd port={}".format(etcd_host, etcd_port), 'INFO')
+    dprint("snap.py.snap_run() etcd host={}, etcd port={}".format(etcd_host, etcd_port), 'INFO')
     etcd = etcd3.client(host=etcd_host, port=etcd_port)
     watch_ids = []
 
@@ -140,6 +142,7 @@ def snap_run(args):
     while True:
         for idx, my_snap in enumerate(my_snaps, start=1):
             key = '/mon/snap/' + str(idx)
+            print('key= {}'.format(key))
             md = my_snap.get_monitor_data()
             print(md)
             etcd.put(key, md)
