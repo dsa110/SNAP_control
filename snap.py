@@ -121,31 +121,33 @@ def snap_run(args):
     dprint(args.snap_config_file, 'INFO', DBG)
     snap_params = read_yaml(args.snap_config_file)
 
+    dprint(args.snap_num, 'INFO', DBG)
+
     my_snaps = []
-    for snap_num in snap_params['snaps']:
-        print("snap.py.snap_run() creatting process to handle snap: {}".format(snap_num))
-        my_snap = DsaXConfig(snap_num, snap_params['snap'][snap_num], snap_params['common'], snap_params['adc16'])
-        my_snaps.append(my_snap)
+    #for snap_num in snap_params['snaps']:
+    print("snap.py.snap_run() creatting process to handle snap: {}".format(args.snap_num))
+    my_snap = DsaXConfig(args.snap_num, snap_params['snap'][args.snap_num], snap_params['common'], snap_params['adc16'])
+    my_snaps.append(my_snap)
 
     etcd_host, etcd_port = parse_endpoint(etcd_params['endpoints'])
     dprint("snap.py.snap_run() etcd host={}, etcd port={}".format(etcd_host, etcd_port), 'INFO')
     etcd = etcd3.client(host=etcd_host, port=etcd_port)
     watch_ids = []
 
-    for idx, my_snap in enumerate(my_snaps, start=1):
-        valid_snaps = [ALL_SNAPS, idx]
-        for num in valid_snaps:
-            cmd = etcd_params['command'] + str(num)
-            watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
-            watch_ids.append(watch_id)
+    #for idx, my_snap in enumerate(my_snaps, start=1):
+    valid_snaps = [ALL_SNAPS, args.snap_num]
+    for num in valid_snaps:
+        cmd = etcd_params['command'] + str(num)
+        watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
+        watch_ids.append(watch_id)
 
     while True:
-        for idx, my_snap in enumerate(my_snaps, start=1):
-            key = '/mon/snap/' + str(idx)
-            print('key= {}'.format(key))
-            md = my_snap.get_monitor_data()
-            print(md)
-            etcd.put(key, md)
+        #for idx, my_snap in enumerate(my_snaps, start=1):
+        key = '/mon/snap/' + str(args.snap_num)
+        # print('key= {}'.format(key))
+        md = my_snap.get_monitor_data()
+        # print(md)
+        etcd.put(key, md)
         sleep(1)
 
 if __name__ == '__main__':
@@ -156,6 +158,7 @@ if __name__ == '__main__':
     parser.add_argument('-sf', '--snap_config_file', type=str,
                         default='snapConfig.yml',
                         help='snap parameters')
+    parser.add_argument('-n', '--snap_num', type=int, help='SNAP number')
     the_args = parser.parse_args()
     dprint(the_args, 'INFO', DBG)
     snap_run(the_args)

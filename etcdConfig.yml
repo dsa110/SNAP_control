@@ -8,8 +8,6 @@ endpoints: ["192.168.1.132:2379"]
 # Number of seconds for timeout
 timeout: "1s"
 # command to watch
-command: '/cmd/snap/'
-#snap number
-snap_num: 1
+command: '/cmd/corr/'
 #Simulation indicator(bool), True when in sim mode, False when using real hardware
-SIM: True
+SIM: False

@@ -38,6 +38,8 @@ class DsaXConfig:
         self.dest_mac = [snap_dict['dest'][0]['mac'], snap_dict['dest'][1]['mac']]
         self.dest_port = [snap_dict['dest'][0]['port'], snap_dict['dest'][1]['port']]
         self.coeff_filename(snap_dict['coeff_filename'])
+        self.level_plot_dirname(snap_dict['level_plot_dirname'])
+        self.adchist_plot_dirname(snap_dict['adchist_plot_dirname'])
         self.calc_coeff_host = snap_dict['calc_coeff_host']
         self.mac_broadcast = 'ff:ff:ff:ff:ff:ff'
         self.mac_base0 = '02:02:00:00:00:00'
@@ -53,10 +55,14 @@ class DsaXConfig:
         self.adc16 = adc16_dict
         self.armed_mjd = 0.0
         self.armed_utc = "1970-01-01T00:00:00.0Z"
+        self.level_utc = self.armed_utc
+        self.adc_utc = self.armed_utc
         self.known_commands = {}
         self.known_commands['prog'] = self.prog
         self.known_commands['init'] = self.initialize
         self.known_commands['arm'] = self.reg_arm
+        self.known_commands['level1'] = self.rawlevels
+        self.known_commands['adc1'] = self.adchist
 
     def bof(self, bof):
         """ Set the FPGA bof file.
@@ -98,6 +104,28 @@ class DsaXConfig:
         # TODO: check validity
         self.coeff_filename = coeff_fn
 
+    def level_plot_dirname(self, level_dn):
+        """ Set the directory name containing the SNAP coeff plot generated
+        when setting levels.
+
+        :param level_dn: SNAP coefficient plot directory name
+        :type level_dn: String
+        """
+
+        # TODO: check validity
+        self.level_plot_dirname = level_dn
+
+    def adchist_plot_dirname(self, adchist_dn):
+        """ Set the directory name containing the SNAP ADC Histograms when
+        setting ADC RMS.
+
+        :param adchist_dn: SNAP ADC histogram plot directory name
+        :type adchist_dn: String
+        """
+
+        # TODO: check validity
+        self.adchist_plot_dirname = adchist_dn
+        
     def _dest_ip(self, idx, dest_ip):
         """Set the destination IP
 
@@ -270,7 +298,7 @@ class DsaXConfig:
 
         print( 'dsaX_config_10G.config10g() All ready to go!')
 
-    def adchist(self, cal_adc):
+    def adchist(self, cal_adc=1):
         """ Perform an ADC Histogram
 
         :param cal_adc: ??
@@ -283,7 +311,7 @@ class DsaXConfig:
         # connect to FPGA
         fpga = corr.katcp_wrapper.FpgaClient(self.snap_ip)
         time.sleep(self.wait_for_connect_time_in_seconds)
-        print( 'connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
+        print( 'dsaX_config_10G.adchist() connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
 
         if cal_adc==1:
             fpga.write_int('scaling',0)
@@ -305,10 +333,10 @@ class DsaXConfig:
         rms3 = np.std(ADC3)
         rms4 = np.std(ADC4)
 
-        print( 'Initial RMS of ADC 1 ',rms1)
-        print( 'Initial RMS of ADC 2 ',rms2)
-        print( 'Initial RMS of ADC 3 ',rms3)
-        print( 'Initial RMS of ADC 4 ',rms4)
+        print( 'dsaX_config_10G.adchist() Initial RMS of ADC 1 ',rms1)
+        print( 'dsaX_config_10G.adchist() Initial RMS of ADC 2 ',rms2)
+        print( 'dsaX_config_10G.adchist() Initial RMS of ADC 3 ',rms3)
+        print( 'dsaX_config_10G.adchist() Initial RMS of ADC 4 ',rms4)
 
         if cal_adc==1:
 
@@ -345,14 +373,20 @@ class DsaXConfig:
             rms3 = np.std(ADC3)
             rms4 = np.std(ADC4)
 
-            print( 'RMS of ADC 1 ',rms1)
-            print( 'RMS of ADC 2 ',rms2)
-            print( 'RMS of ADC 3 ',rms3)
-            print( 'RMS of ADC 4 ',rms4)
+            print( 'dsaX_config_10G.adchist() RMS of ADC 1 ',rms1)
+            print( 'dsaX_config_10G.adchist() RMS of ADC 2 ',rms2)
+            print( 'dsaX_config_10G.adchist() RMS of ADC 3 ',rms3)
+            print( 'dsaX_config_10G.adchist() RMS of ADC 4 ',rms4)
 
 
-        plt.figure()
-
+        #plt.figure()
+        fig = plt.figure()
+        print('dsaX_config_10G.adchist() getting time')
+        plt_time = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+        print('dsaX_config_10G.adchist() got time')
+        print('dsaX_config_10G.adchist() time= {}'.format(plt_time))
+        self.adc_utc = plt_time
+        #fig.suptitle(plt_time)
         plt.subplot(251)
         plt.title('ADC 1')
         plt.hist(ADC1,bins=13)
@@ -376,8 +410,11 @@ class DsaXConfig:
         plt.subplot(155)
         plt.title('All')
         plt.hist(np.ravel(ADC),bins=20)
-        plt.show()
-
+        #plt.show()
+        print('dsaX_config_10G.adchist() Saving plot to ', self.adchist_plot_dirname)
+        plt.savefig('{}/snap{}-{}.png'.format(self.adchist_plot_dirname,
+                                              self.snap_number,
+                                              self.adc_utc), dpi=150)
 
     def initialize(self):
         """ Initialize the SNAP
@@ -594,7 +631,7 @@ class DsaXConfig:
             time.sleep(2)
         # TODO: move filename to config
         #c1,c2,c3,c4 = np.loadtxt('/mnt/nfs/runtime/snap1_coeffs.dat').transpose()
-        c1,c2,c3,c4 = np.loadtxt(self.snap_coeffs_fn).transpose()
+        c1,c2,c3,c4 = np.loadtxt(self.coeff_filename).transpose()
 
         plt.figure()
         plt.subplot(221)
@@ -615,16 +652,16 @@ class DsaXConfig:
         plt.title('Input 1')
         plt.show()
 
-    def rawlevels(self,get):
+    def rawlevels(self,get=1):
 
         rmsval = 1.
-        print( 'Setting 4-bit rms to ',rmsval)
+        print( 'dsaX_config_10G.rawlevels() Setting 4-bit rms to ',rmsval)
 
 
         # connect to FPGA
         fpga = corr.katcp_wrapper.FpgaClient(self.snap_ip)
         time.sleep(self.wait_for_connect_time_in_seconds)
-        print( 'connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
+        print( 'dsaX_config_10G.rawlevels() connected to FPGA ',fpga,', with est clock',fpga.est_brd_clk())
 
         # write initial coefficients
         coeff = 2**14
@@ -635,39 +672,56 @@ class DsaXConfig:
         fpga.write('eq_2_coeffs',write_coeffs);
         fpga.write('eq_3_coeffs',write_coeffs);
 
-        print( 'Getting data')
+        print( 'dsaX_config_10G.rawlevels() Getting data for snap{}'.format(self.snap_number))
 
         if get:
             #os.system('/mnt/nfs/code/calc_coefficients -ip 10.10.5.1 -port 4011 -server snap1')
             cmd = '/mnt/nfs/code/calc_coefficients -ip {} -port {} -server snap{}'.\
-            format(self.dest_ip[0], self.dest_port, self.snap_index+1)
+            format(self.dest_ip[0], self.dest_port[0], self.snap_index+1)
             if self.calc_coeff_host != 'local':
                 cmd = "ssh user@{} {}".format(self.calc_coeff_host, cmd)
+            print( 'dsaX_config_10G.rawlevels() cmd= {}'.format(cmd))
             os.system(cmd)
             time.sleep(2)
+        print( 'dsaX_config_10G.rawlevels() Done getting data')
         # TODO: move filename to config
         #c1,c2,c3,c4 = np.loadtxt('/mnt/nfs/runtime/snap1_coeffs.dat').transpose()
-        c1,c2,c3,c4 = np.loadtxt(self.snap_coeffs_fn).transpose()
-
+        print( 'dsaX_config_10G.rawlevels() Loading coeff from {}'.format(self.coeff_filename))
+        c1,c2,c3,c4 = np.loadtxt(self.coeff_filename).transpose()
+        print( 'dsaX_config_10G.rawlevels() Loaded coeff from {}'.format(self.coeff_filename))
+        print( 'dsaX_config_10G.rawlevels() Starting plot creation')
         plt.figure()
         plt.subplot(221)
         #plt.plot(np.log10(-c1+coeff))
         plt.plot(np.log10(c1))
+        print( 'dsaX_config_10G.rawlevels() Finished c1 plot')
         plt.title('Input 4')
         plt.subplot(222)
         #plt.plot(np.log10(-c2+coeff))
         plt.plot(np.log10(c2))
+        print( 'dsaX_config_10G.rawlevels() Finished c2 plot')
         plt.title('Input 3')
         plt.subplot(223)
         #plt.plot(np.log10(-c3+coeff))
         plt.plot(np.log10(c3))
+        print( 'dsaX_config_10G.rawlevels() Finished c3 plot')
         plt.title('Input 2')
         plt.subplot(224)
         #plt.plot(np.log10(-c4+coeff))
-        plt.plot(np.log10(c4))
+        try:
+            print('dsaX_config_10G.rawlevels() starting plot c4)')
+            plt.plot(np.log10(c4))
+        except:
+            print('dsaX_config_10G.rawlevels() error plotting c4)')
+        print( 'dsaX_config_10G.rawlevels() Finished c4 plot')
         plt.title('Input 1')
-        plt.show()
-
+        # plt.show()
+        print('dsaX_config_10G.rawlevels() Saving plot to ', self.level_plot_dirname)
+        self.level_utc = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+        plt.savefig('{}/snap{}-{}.png'.format(self.level_plot_dirname,
+                                          self.snap_number,
+                                          self.level_utc), dpi=150)
+        print('dsaX_config_10G.rawlevels() Done saving plot to ', self.level_plot_dirname)
         c4 = (coeff*rmsval/c4).astype('uint32')
         c3 = (coeff*rmsval/c3).astype('uint32')
         c2 = (coeff*rmsval/c2).astype('uint32')
@@ -685,7 +739,9 @@ class DsaXConfig:
         coeffs = np.ones(2048,'I')*c4
         write_coeffs = struct.pack('>2048I',*coeffs)
         fpga.write('eq_0_coeffs',write_coeffs);
+        print('dsaX_config_10G.rawlevels() Done')
 
+        
     def prog(self):
         self.adc16['host'] = self.snap_ip
         print("dsaX_config_10G.prog() snap_ip= {} adc6= {}".format(self.snap_ip,self.adc16))
@@ -715,9 +771,9 @@ class DsaXConfig:
 
         utc = pytz.UTC
         mon_data = {}
-        time = datetime.datetime.utcnow(). \
+        cur_time = datetime.datetime.utcnow(). \
         replace(tzinfo=utc).isoformat()
-        mon_data['time'] = time
+        mon_data['time'] = cur_time
         mon_data['number'] = self.snap_number
         mon_data['ip'] = self.snap_ip
         mon_data['prog'] = self.programmed
@@ -725,6 +781,8 @@ class DsaXConfig:
         mon_data['armed'] = self.armed
         mon_data['armed_mjd'] = self.armed_mjd
         mon_data['armed_utc'] = self.armed_utc
+        mon_data['level_utc'] = self.level_utc
+        mon_data['adc_utc'] = self.adc_utc
         mon_data['sim'] = False
 
         try:

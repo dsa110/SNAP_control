@@ -48,4 +48,5 @@ def read_yaml(yml_fn):
             return yaml.load(stream)
         except yaml.YAMLError as exc:
             # TODO: log exception
+            print(exc)
             return None

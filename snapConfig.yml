@@ -1,12 +1,6 @@
 # snaps define which snaps to instantiate etcd services for.
 # each service will then load the specific info listed under
-# snap: below.
-snaps:
-  - 1
-  - 2
-  - 3
-  - 4
-  - 5
+
 
 # parameter common to all snaps
 common:
@@ -53,7 +47,10 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4011
     coeff_filename: /mnt/nfs/runtime/snap1_coeffs.dat
+    level_plot_dirname: /home/rh/proj/dsa110/websrv/static/COEFF
+    adchist_plot_dirname: /home/rh/proj/dsa110/websrv/static/ADC
     calc_coeff_host: local
+    calc_coeff_cmd: /mnt/nfs/code/calc_coefficients
   2:
     ip: 10.10.1.3
     adc_demux: 2
@@ -73,6 +70,8 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4012
     coeff_filename: /mnt/nfs/runtime/snap2_coeffs.dat
+    level_plot_dirname: /home/rh/proj/dsa110/websrv/static/COEFF
+    adchist_plot_dirname: /home/rh/proj/dsa110/websrv/static/ADC
     calc_coeff_host: dsa1
     calc_coeff_cmd: /mnt/nfs/code/calc_coefficients
   3:
@@ -94,6 +93,8 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4013
     coeff_filename: /mnt/nfs/runtime/snap3_coeffs.dat
+    level_plot_dirname: /home/rh/proj/dsa110/websrv/static/COEFF
+    adchist_plot_dirname: /home/rh/proj/dsa110/websrv/static/ADC
     calc_coeff_host: dsa2
     calc_coeff_cmd: /mnt/nfs/code/calc_coefficients
   4:
@@ -115,6 +116,8 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4014
     coeff_filename: /mnt/nfs/runtime/snap4_coeffs.dat
+    level_plot_dirname: /home/rh/proj/dsa110/websrv/static/COEFF
+    adchist_plot_dirname: /home/rh/proj/dsa110/websrv/static/ADC
     calc_coeff_host: dsa3
     calc_coeff_cmd: /mnt/nfs/code/calc_coefficients
   5:
@@ -136,5 +139,7 @@ snap:
         mac: 24:8a:07:5d:7e:41
         port: 4015
     coeff_filename: /mnt/nfs/runtime/snap5_coeffs.dat
+    level_plot_dirname: /home/rh/proj/dsa110/websrv/static/COEFF
+    adchist_plot_dirname: /home/rh/proj/dsa110/websrv/static/ADC
     calc_coeff_host: dsa4
     calc_coeff_cmd: /mnt/nfs/code/calc_coefficients
