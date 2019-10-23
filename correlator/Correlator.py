@@ -27,12 +27,15 @@ class Correlator:
         self.cmn = cmn
         self.running = False
         self.started_utc = "1970-01-01T00:00:00+00:00"
+        self.known_commands = {}
+        self.known_commands['go'] = self.go
+        self.known_commands['halt'] = self.halt
 
     def _cpscr_log_filename(self, log_root):
         """Private helper
         """
         # '/mnt/nfs/runtime/tmplog/cpscr_log_'+machine+'.log'
-        return '{}/cpscr_log_{}.log'.format(log_root, self.machine_name)
+        return '{}{}.log'.format(log_root, self.machine_name)
 
     def _cpscr(self, cpscr_cmd, log_root):
         """Private helper
@@ -46,7 +49,7 @@ class Correlator:
         """Private helper
         """
         # '/mnt/nfs/runtime/tmplog/final_log_'+machine+'.log'
-        return '{}/final_log_{}.log'.format(log_root, self.machine_name)
+        return '{}{}.log'.format(log_root, self.machine_name)
 
     def _final_cmd(self, cmd, c, filename, o, ip):
         """Private helper
@@ -81,13 +84,13 @@ class Correlator:
 
     def _massager_log_filename(self, log_root):
         # '/mnt/nfs/runtime/tmplog/massager_log_'+machine+'.log'
-        return '{}/massager_log_{}.log'.format(log_root, self.machine_name)
+        return '{}{}.log'.format(log_root, self.machine_name)
     
     def _massager(self, log_root):
         """Private helper
         """
         #massager_proc = subprocess.Popen('ssh user@'+machine+' "source ~/.bashrc; '+massager+'"', shell = True, stdout=massager_log, stderr=massager_log)
-        with open(self._massager_log_filname(log_root), 'w') as log:
+        with open(self._massager_log_filename(log_root), 'w') as log:
             massager_cmd = self._massager_cmd(self.cmn['massager']['cmd'],
                                               self.cmn['massager']['c'],
                                               self.cmn['nbytes_final'])
@@ -97,7 +100,7 @@ class Correlator:
     def _ar_log_filename(self, log_dir, idx):
         """Private helper
         """
-        return '{}/ar{}.log'.format(log_dir, idx)
+        return '{}/ar{}_log_{}.log'.format(log_dir, idx, self.machine_name)
 
     def _ar_cmd(self, cmd, args):
         """Private helper
@@ -109,9 +112,11 @@ class Correlator:
         """Private helper
         """
         # ar1_log = open('/mnt/nfs/runtime/tmplog/ar1_log_'+machine+'.log','w')
+        # ar1 = '/usr/local/dsaX/bin/dsaX_single -k adbd -o bdad -c 24'
         # ar1_proc = subprocess.Popen('ssh user@'+machine+' "source ~/.bashrc; '+ar1+'"', shell = True, stdout=ar1_log, stderr=ar1_log)
         log_fn = self._ar_log_filename(log_dir, idx)
-        ar_cmd = self._ar_cmd(self.cmn['ar']['cmd'], self.cmn['ar'][idx])
+        print("idx= ", idx, "ar: ", self.cmn['ar'])
+        ar_cmd = self._ar_cmd(self.cmn['ar_cmd'], (self.cmn['ar'])[idx-1])
         with open(log_fn, 'w') as log:
             cmd = self._subprocess_cmd(self.machine_name, ar_cmd)
             subprocess.Popen(cmd, shell=True, stdout=log, stderr=log)
@@ -127,7 +132,7 @@ class Correlator:
         """
         # '/usr/local/dsaX/bin/dsaX_nicdb -k adbd -p 7016 -c 8 -b '+nbytes_many+' -i 10.10.4.5'
         return '{} -k {} -p {} -c {} -b {} -i {}'.format(cmd, args['k'],
-                                                         args['p'],
+                                                         args['port'],
                                                          args['c'],
                                                          self.cmn['nbytes_many'],
                                                          args['ip'])
@@ -165,7 +170,7 @@ class Correlator:
         # db1_log = open('/mnt/nfs/runtime/tmplog/db1_log_'+machine+'.log','w')
         # db1_proc = subprocess.Popen('ssh user@'+machine+' "source ~/.bashrc; '+dbnic1+'"', shell = True, stdout=db1_log, stderr=db1_log)
         log_fn = self._dbn_log_filename(log_dir, idx)
-        dbn_cmd = self._dbn_cmd(self.cmn['nicdb']['cmd'], port, args)
+        dbn_cmd = self._dbn_cmd(self.cmn['dbnic']['cmd'], port, args)
         with open(log_fn, 'w') as log:
             cmd = self._subprocess_cmd(self.machine_name, dbn_cmd)
             subprocess.Popen(cmd, shell=True, stdout=log, stderr=log)
@@ -214,7 +219,7 @@ class Correlator:
         with open(log_fn, 'w') as log:
             capture_cmd = self._capture_cmd(self.cmn['capture']['cmd'],
                                            self.cmn['capture']['b'],
-                                           self.cmn['capture']['f'],
+                                           self.cmn['capture']['filename'],
                                            self.cmn['capture']['k'],
                                            self.cmn['capture']['port'],
                                            self.cfg['capture']['ip'])
@@ -231,6 +236,11 @@ class Correlator:
         output = subprocess.Popen(cmd, shell=True)
         subprocess.Popen.wait(output)
 
+    def _cbuffers(self):
+        print('creating dada buffers on ', self.machine_name)
+        for buf in self.cmn['buffer']:
+            self._create_buffer(buf['k'], buf['b'], buf['c'], buf['n'])
+
     def _destroy_buffer(self, name):
         """Private helper
         """
@@ -238,6 +248,23 @@ class Correlator:
         cmd = 'ssh user@{} "source ~/.bashrc; dada_db -k {} -d"'.format(self.machine_name, name)
         os.system(cmd)
 
+    def _create_buffer(self, name, b, c, n):
+        """Private helper
+        """
+        # 'ssh user@'+machine+' "source ~/.bashrc; dada_db -k eada -b 42240000 -l -p -c 1 -n 4"')
+        cmd = 'ssh user@{} "source ~/.bashrc; dada_db -k {} -b {} -l -p -c {} -n {}"'.format(self.machine_name, name, b, c, n)
+        os.system(cmd)
+
+    def process(self, cmd_dict):
+        print("Correlator.process() cmd_dict= ".format(cmd_dict))
+        if cmd_dict['cmd'] == "go":
+            print("Correlator.process() running go")
+            self.go()
+        elif cmd_dict['cmd'] == "stop":
+            print("Correlator.process() running stop()")
+            stop()
+        else:
+            print("Unknown cmd: {}".format(cmd))
 
     def start_rx(self):
         """Start receivers
@@ -252,23 +279,24 @@ class Correlator:
         sleep(0.1)
         
         print('Starting massager')
-        self._massager(self.cmn['massager']['log'])
+        #self._massager(self.cmn['massager']['log'])
+        self._massager("/mnt/nfs/runtime/tmplog/massager_log_")
         sleep(0.1)
 
         print('Starting expands')
-        for idx, ar in enumerate(self.cfg['ar'], start=1):
+        for idx, ar in enumerate(self.cmn['ar'], start=1):
             self._ar(self.cmn['log_dir'], idx)
             sleep(0.1)
             
         print('Starting nicdbs')
         for idx, ndb in enumerate(self.cfg['nicdb'], start=1):
-            self._ndb(self.cmn['nicdb']['cmd'], idx, ndb)
+            self._ndb(self.cmn['log_dir'], idx, ndb)
             sleep(0.1)
 
     def start_tx(self):
         print('Starting dbnics')
         for idx, dbn in enumerate(self.cfg['dbnic'], start=1):
-            self._dbn(self.cmn['dbnic']['cmd'],
+            self._dbn(self.cmn['log_dir'],
                       idx,
                       self.cfg['dbnic_port'],
                       dbn)
@@ -294,8 +322,8 @@ class Correlator:
         self._stop_process('dsaX_writevis')
         self._stop_process('cpscr.bash')
 
-    def dbbuffers(self):
-        print('destroying dada buffers on ', self.machine_namme)
+    def dbuffers(self):
+        print('destroying dada buffers on ', self.machine_name)
         self._destroy_buffer('dbda')
         self._destroy_buffer('dcda')
         self._destroy_buffer('ddda')
@@ -313,6 +341,15 @@ class Correlator:
         self._destroy_buffer('bbab')
         self._destroy_buffer('eada')
         self._destroy_buffer('caca')
+
+    def halt(self):
+        self.stop()
+        self.dbuffers()
+
+    def go(self):
+        self._cbuffers()
+        self.start_rx()
+        self.start_tx()
 
     def get_monitor_data(self):
         """Return monitor data as a tupe of JSON string and dictionary

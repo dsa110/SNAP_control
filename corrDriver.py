@@ -111,6 +111,7 @@ def process_command(my_corr):
         for key, val in cmd.items():
             dprint("corr.py.process_command() cmd key= {}, cmd val= {}".format(key, val), 'INFO', DBG)
         dprint("corr.py.process_command() a: cmd= {}".format(cmd), 'INFO', DBG)
+        dprint("corr.py.process_command() sending to my_corr.process")
         my_corr.process(cmd)
     return a
 
@@ -126,14 +127,20 @@ def process_run(args):
     dprint(args.corr_config_file, 'INFO', DBG)
     corr_params = read_yaml(args.corr_config_file)
 
-    dprint(args.corr_num, 'INFO', DBG)
+    # dprint(args.corr_num, 'INFO', DBG)
 
     my_corrs = []
     #for corr_num in corr_params['corrs']:
     print("corr.py.process_run() creatting process to handle corr on: {}".format(args.machine_name))
     my_corr = Correlator(args.machine_name, corr_params['machine'][args.machine_name], corr_params['common'])
-    my_corrs.append(my_corr)
 
+    ########
+    my_corr.halt()
+    # my_corr.go()
+    # my_corrs.append(my_corr)
+    my_corr.process({'cmd': 'go'})
+    ########
+    
     etcd_host, etcd_port = parse_endpoint(etcd_params['endpoints'])
     dprint("corr.py.corr_run() etcd host={}, etcd port={}".format(etcd_host, etcd_port), 'INFO')
     etcd = etcd3.client(host=etcd_host, port=etcd_port)
@@ -142,17 +149,17 @@ def process_run(args):
     #for idx, my_corr in enumerate(my_corrs, start=1):
     valid_corrs = [ALL_CORRS, args.machine_name]
     for name in valid_corrs:
-        cmd = etcd_params['command'] + str(name)
+        cmd = etcd_params['corr_command'] + str(name)
         watch_id = etcd.add_watch_callback(cmd, process_command(my_corr))
         watch_ids.append(watch_id)
 
     while True:
         #for idx, my_corr in enumerate(my_corrs, start=1):
         key = '/mon/corr/' + str(args.machine_name)
-        # print('key= {}'.format(key))
-        md = my_corr.get_monitor_data()
+        # print('corrDriver.process_run() mon key= {}'.format(key))
+        # md = my_corr.get_monitor_data()
         # print(md)
-        etcd.put(key, md)
+        # etcd.put(key, md)
         sleep(1)
 
 if __name__ == '__main__':

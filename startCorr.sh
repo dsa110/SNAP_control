@@ -2,9 +2,9 @@
 
 # start Correlatore services
 
-./corr.py --machine_name dsamaster &
-./corr.py --machine_name dsa1 &
-./corr.py --machine_name dsa2 &
-./corr.py --mahcine_name dsa3 &
-./corr.py --mahcine_name dsa4 &
+./corrDriver.py --machine_name dsamaster > dsamaster.log 2>&1 &
+./corrDriver.py --machine_name dsa3 > dsa3.log 2>&1 &
+./corrDriver.py --machine_name dsa4 > dsa4.log 2>&1 &
+./corrDriver.py --machine_name dsa1 > dsa1.log 2>&1 &
+./corrDriver.py --machine_name dsa2 > dsa2.log 2>&1 &
 

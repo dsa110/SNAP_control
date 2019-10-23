@@ -51,7 +51,75 @@ common:
     - k: aaba
       o: bbab
       c: 28
-
+  buffer:
+    - k: caca
+      b: 402653184
+      c: 0
+      n: 8
+    - k: dbda
+      b: 49152000
+      c: 0
+      n: 4
+    - k: dcda
+      b: 49152000
+      c: 0
+      n: 4
+    - k: ddda
+      b: 49152000
+      c: 0
+      n: 4
+    - k: ebda
+      b: 49152000
+      c: 0
+      n: 4
+    - k: ecda
+      b: 49152000
+      c: 0
+      n: 4
+    - k: adbd
+      b: 49152000
+      c: 1
+      n: 4
+    - k: adcd
+      b: 49152000
+      c: 1
+      n: 4
+    - k: addd
+      b: 49152000
+      c: 1
+      n: 4
+    - k: aaaa
+      b: 49152000
+      c: 1
+      n: 4
+    - k: aaba
+      b: 49152000
+      c: 1
+      n: 4
+    - k: bdad
+      b: 98304000
+      c: 1
+      n: 4
+    - k: bdcd
+      b: 98304000
+      c: 1
+      n: 4
+    - k: bddd
+      b: 98304000
+      c: 1
+      n: 4
+    - k: bbbb
+      b: 98304000
+      c: 1
+      n: 4
+    - k: bbab
+      b: 98304000
+      c: 1
+      n: 4
+    - k: eada
+      b: 42240000
+      c: 1
+      n: 4
 machine:
   dsamaster:
     capture:
@@ -122,18 +190,23 @@ machine:
     nicdb_ip: 10.10.4.2
     nicdb:
       - port: 7016
+        ip: 10.10.4.2
         c: 8
         k: adbd
       - port: 7015
+        ip: 10.10.4.2
         c: 9
         k: adcd
       - port: 7014
+        ip: 10.10.4.2
         c: 10
         k: addd
       - port: 7013
+        ip: 10.10.4.2
         c: 11
         k: aaaa
       - port: 7012
+        ip: 10.10.4.2
         c: 12
         k: aaba
     final:
@@ -164,18 +237,23 @@ machine:
     nicdb_ip: 10.10.4.3
     nicdb:
       - port: 7016
+        ip: 10.10.4.3
         c: 8
         k: adbd
       - port: 7015
+        ip: 10.10.4.3
         c: 9
         k: adcd
       - port: 7014
+        ip: 10.10.4.3
         c: 10
         k: addd
       - port: 7013
+        ip: 10.10.4.3
         c: 11
         k: aaaa
       - port: 7012
+        ip: 10.10.4.3
         c: 12
         k: aaba
     final:
@@ -206,18 +284,23 @@ machine:
     nicdb_ip: 10.10.4.4
     nicdb:
       - port: 7016
+        ip: 10.10.4.4
         c: 8
         k: adbd
       - port: 7015
+        ip: 10.10.4.4
         c: 9
         k: adcd
       - port: 7014
+        ip: 10.10.4.4
         c: 10
         k: addd
       - port: 7013
+        ip: 10.10.4.4
         c: 11
         k: aaaa
       - port: 7012
+        ip: 10.10.4.4
         c: 12
         k: aaba
     final:
@@ -245,21 +328,26 @@ machine:
       - ip: 10.10.4.5
         c: 7
         k: ecda
-    nicdb_ip: 10.10.4.4
+    nicdb_ip: 10.10.4.5
     nicdb:
       - port: 7016
+        ip: 10.10.4.5
         c: 8
         k: adbd
       - port: 7015
+        ip: 10.10.4.5
         c: 9
         k: adcd
       - port: 7014
+        ip: 10.10.4.5
         c: 10
         k: addd
       - port: 7013
+        ip: 10.10.4.5
         c: 11
         k: aaaa
       - port: 7012
+        ip: 10.10.4.5
         c: 12
         k: aaba
     final:
