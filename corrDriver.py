@@ -3,11 +3,14 @@
 Command key: /cmd/corr/<machine_numer>
 Monitor Key: /mon/corr/<machine_number>
 
-Commands: {cmd: "start"}
+Commands: {cmd: "cbuffers"}
+          {cmd: "start_rx"}
+          {cmd: "start_tx"}
           {cmd: "stop"}
 
 Monitor: {machine_number: int, running: bool, sim: bool, start_time: ISO8601}
 """
+
 import etcd3
 import json
 from time import sleep
