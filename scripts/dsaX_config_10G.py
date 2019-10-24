@@ -555,22 +555,23 @@ class DsaXConfig:
         print( 'connected to FPGA 1',f1,', with est clock',f1.est_brd_clk())
 
         f1.write_int('reg_arm',0)
-        # time.sleep(0.1)
+        time.sleep(0.1)
 
         # jonathon edit force_sync
         f1.write_int('force_sync',2)
-        # time.sleep(0.1)
+        time.sleep(0.1)
         f1.write_int('force_sync',0)
-        # time.sleep(0.1)
+        time.sleep(0.1)
 
-        f1.write_int('eth_ctrl',1);
-        # time.sleep(0.1)
-        f1.write_int('eth_ctrl',0);
-        f1.write_int('eth1_ctrl',0);
-        # time.sleep(0.1)
-        f1.write_int('eth_ctrl',2);
-        f1.write_int('eth1_ctrl',2);
-        # time.sleep(0.1)
+        f1.write_int('eth_ctrl',1)
+        f1.write_int('eth1_ctrl', 1)
+        time.sleep(0.1)
+        f1.write_int('eth_ctrl',0)
+        f1.write_int('eth1_ctrl',0)
+        time.sleep(0.1)
+        f1.write_int('eth_ctrl',2)
+        f1.write_int('eth1_ctrl',2)
+        time.sleep(0.1)
 
         # sync to 2-and-a-bit seconds from now
         now = datetime.datetime.now()
@@ -580,10 +581,11 @@ class DsaXConfig:
         delt2 = datetime.timedelta(hours=7,seconds=1)
         myt = (now+delt+delt2).isoformat()
         t = Time(myt,format='isot',scale='utc')
-        f = open("/mnt/nfs/runtime/UTC_START.txt","w")
-        f.write('{0}\n'.format(t.mjd))
-        f.write('{0}\n'.format(myt))
-        f.close()
+        if self.snap_number == 1:
+            f = open("/mnt/nfs/runtime/UTC_START.txt", "w")
+            f.write('{0}\n'.format(t.mjd))
+            f.write('{0}\n'.format(myt))
+            f.close()
         self.armed_mjd = t.mjd
         # TODO: add ISO format correctly.
         self.armed_utc = '{}.0Z'.format(myt)
@@ -761,7 +763,7 @@ class DsaXConfig:
         :type: Dictionary
         """
         print("dsaX_config_10G.process(). cmd_dict= {}".format(cmd_dict))
-        cmd = cmd_dict['Cmd']
+        cmd = cmd_dict['cmd']
         print("dsaX_config_10G.process(). cmd= {}".format(cmd))
         cmd in self.known_commands and self.known_commands[cmd]()
 

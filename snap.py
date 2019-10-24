@@ -137,7 +137,8 @@ def snap_run(args):
     #for idx, my_snap in enumerate(my_snaps, start=1):
     valid_snaps = [ALL_SNAPS, args.snap_num]
     for num in valid_snaps:
-        cmd = etcd_params['command'] + str(num)
+        cmd = etcd_params['snap_command'] + str(num)
+        print('snap.py.snap_run() watch cmd= {}'.format(cmd))
         watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
         watch_ids.append(watch_id)
 
