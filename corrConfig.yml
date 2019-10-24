@@ -31,6 +31,7 @@ common:
   massager:
     cmd: /usr/local/dsaX/bin/dsaX_fancy
     c: 14
+    log: /mnt/nfs/runtime/tmplog/massager_log_
   cpscr:
     cmd: /usr/local/dsaX/bin/cpscr.bash
     log: /mnt/nfs/runtime/tmplog/cpscr_log_
@@ -138,7 +139,7 @@ machine:
       - ip: 10.10.4.4
         c: 6
         k: ebda
-      - ip: 10.10.5.5
+      - ip: 10.10.4.5
         c: 7
         k: ecda
     nicdb:

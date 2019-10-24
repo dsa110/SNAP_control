@@ -29,6 +29,9 @@ class Correlator:
         self.started_utc = "1970-01-01T00:00:00+00:00"
         self.known_commands = {}
         self.known_commands['go'] = self.go
+        self.known_commands['cbuffers'] = self.cbuffers
+        self.known_commands['start_rx'] = self.start_rx
+        self.known_commands['start_tx'] = self.start_tx
         self.known_commands['halt'] = self.halt
 
     def _cpscr_log_filename(self, log_root):
@@ -115,7 +118,7 @@ class Correlator:
         # ar1 = '/usr/local/dsaX/bin/dsaX_single -k adbd -o bdad -c 24'
         # ar1_proc = subprocess.Popen('ssh user@'+machine+' "source ~/.bashrc; '+ar1+'"', shell = True, stdout=ar1_log, stderr=ar1_log)
         log_fn = self._ar_log_filename(log_dir, idx)
-        print("idx= ", idx, "ar: ", self.cmn['ar'])
+        sys.stderr.write("idx= {} ar: {}\n".format(idx, self.cmn['ar']))
         ar_cmd = self._ar_cmd(self.cmn['ar_cmd'], (self.cmn['ar'])[idx-1])
         with open(log_fn, 'w') as log:
             cmd = self._subprocess_cmd(self.machine_name, ar_cmd)
@@ -236,8 +239,8 @@ class Correlator:
         output = subprocess.Popen(cmd, shell=True)
         subprocess.Popen.wait(output)
 
-    def _cbuffers(self):
-        print('creating dada buffers on ', self.machine_name)
+    def cbuffers(self):
+        sys.stderr.write('creating dada buffers on {}\n'.format(self.machine_name))
         for buf in self.cmn['buffer']:
             self._create_buffer(buf['k'], buf['b'], buf['c'], buf['n'])
 
@@ -256,45 +259,39 @@ class Correlator:
         os.system(cmd)
 
     def process(self, cmd_dict):
-        print("Correlator.process() cmd_dict= ".format(cmd_dict))
-        if cmd_dict['cmd'] == "go":
-            print("Correlator.process() running go")
-            self.go()
-        elif cmd_dict['cmd'] == "stop":
-            print("Correlator.process() running stop()")
-            stop()
-        else:
-            print("Unknown cmd: {}".format(cmd))
+        sys.stderr.write("Correlator.process() cmd_dict= {}\n".format(cmd_dict))
+        cmd =  cmd_dict['cmd']
+        cmd in self.known_commands and self.known_commands[cmd]()
 
     def start_rx(self):
         """Start receivers
         """
         
-        print('Starting cpscr')
+        sys.stderr.write('Starting cpscr\n')
         self._cpscr(self.cmn['cpscr']['cmd'], self.cmn['cpscr']['log'])
         sleep(0.1)
         
-        print('Starting final')
+        sys.stderr.write('Starting final\n')
         self._final(self.cmn['final']['log'])
         sleep(0.1)
         
-        print('Starting massager')
-        #self._massager(self.cmn['massager']['log'])
-        self._massager("/mnt/nfs/runtime/tmplog/massager_log_")
+        sys.stderr.write('Starting massager\n')
+        self._massager(self.cmn['massager']['log'])
         sleep(0.1)
 
-        print('Starting expands')
+        sys.stderr.write('Starting expands\n')
         for idx, ar in enumerate(self.cmn['ar'], start=1):
             self._ar(self.cmn['log_dir'], idx)
             sleep(0.1)
             
-        print('Starting nicdbs')
+        sys.stderr.write('Starting nicdbs\n')
         for idx, ndb in enumerate(self.cfg['nicdb'], start=1):
+            sys.stderr.write('  nicdb for -k {}\n'.format(ndb['k']))
             self._ndb(self.cmn['log_dir'], idx, ndb)
             sleep(0.1)
 
     def start_tx(self):
-        print('Starting dbnics')
+        sys.stderr.write('Starting dbnics\n')
         for idx, dbn in enumerate(self.cfg['dbnic'], start=1):
             self._dbn(self.cmn['log_dir'],
                       idx,
@@ -302,17 +299,17 @@ class Correlator:
                       dbn)
             sleep(0.1)
 
-        print('Starting fanout')
+        sys.stderr.write('Starting fanout\n')
         self._fanout(self.cmn['log_dir'])
         sleep(0.1)
 
-        print('Starting capture')
+        sys.stderr.write('Starting capture\n')
         self._capture(self.cmn['log_dir'])
         sleep(0.1)
 
         
     def stop(self):
-        print('Killing everything')
+        sys.stderr.write('Killing everything\n')
         self._stop_process('dsaX_correlator_udpdb_thread')
         self._stop_process('dsaX_correlator_fanout')
         self._stop_process('dsaX_dbnic')
@@ -323,33 +320,25 @@ class Correlator:
         self._stop_process('cpscr.bash')
 
     def dbuffers(self):
-        print('destroying dada buffers on ', self.machine_name)
-        self._destroy_buffer('dbda')
-        self._destroy_buffer('dcda')
-        self._destroy_buffer('ddda')
-        self._destroy_buffer('ebda')
-        self._destroy_buffer('ecda')
-        self._destroy_buffer('adbd')
-        self._destroy_buffer('adcd')
-        self._destroy_buffer('addd')
-        self._destroy_buffer('aaaa')
-        self._destroy_buffer('aaba')
-        self._destroy_buffer('bdad')
-        self._destroy_buffer('bdcd')
-        self._destroy_buffer('bddd')
-        self._destroy_buffer('bbbb')
-        self._destroy_buffer('bbab')
-        self._destroy_buffer('eada')
-        self._destroy_buffer('caca')
+        sys.stderr.write('destroying dada buffers on {}\n'.format(self.machine_name))
+        for buf in self.cmn['buffer']:
+            self._destroy_buffer(buf['k'])
 
     def halt(self):
         self.stop()
         self.dbuffers()
 
     def go(self):
-        self._cbuffers()
-        self.start_rx()
-        self.start_tx()
+        self.cbuffers()
+        # self.start_rx()
+        
+        # all rx's must be running on each machine before the tx's start
+        # the sleep is a hack and a deterministic paradigm will be designed.
+        # sys.stderr.write("Sleeping for 30sec to allow rx to run on all other machines\n")
+        # sleep(30)
+        
+        # self.start_tx()
+        sys.stderr.write("Finished go()\n")
 
     def get_monitor_data(self):
         """Return monitor data as a tupe of JSON string and dictionary
@@ -371,6 +360,6 @@ class Correlator:
         try:
             md_json = json.dumps(mon_data)
         except ValueError:
-            print("get_monitor_data(): JSON encode error. Check JSON."
-                  "mon_data = {}".format(mon_data), 'ERR')
+            sys.stderr.write("get_monitor_data(): JSON encode error. Check JSON."
+                             "mon_data = {} {}\n".format(mon_data, 'ERR'))
         return md_json

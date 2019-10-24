@@ -111,7 +111,7 @@ def process_command(my_corr):
         for key, val in cmd.items():
             dprint("corr.py.process_command() cmd key= {}, cmd val= {}".format(key, val), 'INFO', DBG)
         dprint("corr.py.process_command() a: cmd= {}".format(cmd), 'INFO', DBG)
-        dprint("corr.py.process_command() sending to my_corr.process")
+        dprint("corr.py.process_command() sending to my_corr.process", 'INFO', DBG)
         my_corr.process(cmd)
     return a
 
@@ -135,10 +135,10 @@ def process_run(args):
     my_corr = Correlator(args.machine_name, corr_params['machine'][args.machine_name], corr_params['common'])
 
     ########
-    my_corr.halt()
+    # my_corr.halt()
     # my_corr.go()
     # my_corrs.append(my_corr)
-    my_corr.process({'cmd': 'go'})
+    # my_corr.process({'cmd': 'go'})
     ########
     
     etcd_host, etcd_port = parse_endpoint(etcd_params['endpoints'])
@@ -150,12 +150,14 @@ def process_run(args):
     valid_corrs = [ALL_CORRS, args.machine_name]
     for name in valid_corrs:
         cmd = etcd_params['corr_command'] + str(name)
-        watch_id = etcd.add_watch_callback(cmd, process_command(my_corr))
-        watch_ids.append(watch_id)
+        if my_corr is not None:
+            print('corrDriver.py.corr_run() watch cmd= {}'.format(cmd))
+            watch_id = etcd.add_watch_callback(cmd, process_command(my_corr))
+            watch_ids.append(watch_id)
 
     while True:
         #for idx, my_corr in enumerate(my_corrs, start=1):
-        key = '/mon/corr/' + str(args.machine_name)
+        #key = '/mon/corr/' + str(args.machine_name)
         # print('corrDriver.process_run() mon key= {}'.format(key))
         # md = my_corr.get_monitor_data()
         # print(md)
