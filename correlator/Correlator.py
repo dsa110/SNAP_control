@@ -43,7 +43,7 @@ class Correlator:
         :return: cpscr log filename
         :rtype: String
         """
-        
+
         # '/mnt/nfs/runtime/tmplog/cpscr_log_'+machine+'.log'
         return '{}{}.log'.format(log_root, self.machine_name)
 
@@ -55,7 +55,7 @@ class Correlator:
         :type cpscr_cmd: String
         :type log_root: String
         """
-        
+
         # cpscr_proc = subprocess.Popen('ssh user@'+machine+' "source ~/.bashrc; '+cpscr+'"', shell = True, stdout=cpscr_log, stderr=cpscr_log)
         with open(self._cpscr_log_filename(log_root), 'w') as log:
             cmd = self._subprocess_cmd(self.machine_name, cpscr_cmd)
@@ -91,7 +91,7 @@ class Correlator:
         :return: final Command.
         :rtype: String
         """
-        
+
         # '/usr/local/dsaX/bin/dsaX_writevis -c 13 -f /home/user/data/run1/dsa4 -o 1365.20508  -i 10.10.1.10'
         return '{} -c {} -f {} -o {} -i {}'.format(cmd, c, filename, o, ip)
 
@@ -101,6 +101,7 @@ class Correlator:
         :param final_log_root: Log file base name.
         :type final_log_root: String
         """
+
         # final_proc = subprocess.Popen('ssh user@'+machine+' "source ~/.bashrc; '+final+'"', shell = True, stdout=final_log, stderr=final_log)
         # final_log = open(self._final_log_filename(final_root), 'w')
         with open(self._final_log_filename(final_log_root), 'w') as log:
@@ -124,6 +125,7 @@ class Correlator:
         :return: massager command
         :rtype: String
         """
+
         # '/usr/local/dsaX/bin/dsaX_fancy -c 14 -n '+nbytes_final
         return '{} -c {} -n {}'.format(cmd, c, nbytes)
 
@@ -153,7 +155,7 @@ class Correlator:
 
         # '/mnt/nfs/runtime/tmplog/massager_log_'+machine+'.log'
         return '{}{}.log'.format(log_root, self.machine_name)
-    
+
     def _massager(self, log_root):
         """Private helper to run massager command.
 
@@ -179,6 +181,7 @@ class Correlator:
         :return: ar log filename
         :rtype: String
         """
+
         return '{}/ar{}_log_{}.log'.format(log_dir, idx, self.machine_name)
 
     def _ar_cmd(self, cmd, args):
@@ -192,7 +195,7 @@ class Correlator:
         :return: ar command
         :rtype: String
         """
-        
+
         # '/usr/local/dsaX/bin/dsaX_single -k adbd -o bdad -c 24'
         return '{} -k {} -o {} -c {}'.format(cmd, args['k'], args['o'], args['c'])
 
@@ -243,12 +246,14 @@ class Correlator:
         :return: ndb command
         :rtype: String
         """
+
         # '/usr/local/dsaX/bin/dsaX_nicdb -k adbd -p 7016 -c 8 -b '+nbytes_many+' -i 10.10.4.5'
         return '{} -k {} -p {} -c {} -b {} -i {}'.format(cmd, args['k'],
                                                          args['port'],
                                                          args['c'],
                                                          self.cmn['nbytes_many'],
                                                          args['ip'])
+
     def _ndb(self, log_dir, idx, args):
         """Private helper to run ndb command.
 
@@ -280,8 +285,7 @@ class Correlator:
         :return: dbn log filename
         :rtype: String
         """
-        """Private helper
-        """
+
         # /mnt/nfs/runtime/tmplog/db1_log_'+machine+'.log'
         return '{}/db{}_log_{}.log'.format(log_dir, idx, self.machine_name)
 
@@ -297,6 +301,7 @@ class Correlator:
         :return: dbn command
         :rtype: String
         """
+
         # '/usr/local/dsaX/bin/dsaX_dbnic -k dbda -i 10.10.4.1 -p 7012 -c 3 -n '+nwait
         return '{} -k {} -i {} -p {} -c {} -n {}'.format(cmd,
                                                          args['k'],
@@ -355,9 +360,10 @@ class Correlator:
         :return: fanout command
         :rtype: String
         """
+
         # '/usr/local/dsaX/bin/dsaX_correlator_fanout -c 2 -n '+nsamps
         return '{} -c {} -n {}'.format(cmd, c, n)
-    
+
     def _fanout(self, log_root):
         """Private helper ro run fancout command
 
@@ -374,7 +380,6 @@ class Correlator:
             cmd = self._subprocess_cmd(self.machine_name, fanout_cmd)
             # fanout_proc = subprocess.Popen('ssh user@'+machine+' "source ~/.bashrc; '+fanout+'"', shell = True, stdout=fanout_log, stderr=fanout_log)
             subprocess.Popen(cmd, shell=True, stdout=log, stderr=log)
-
 
     def _capture_cmd(self, cmd, b, f, k, p, ip):
         """Private helper to return capture command.
@@ -396,6 +401,7 @@ class Correlator:
         :return: capture command
         :rtype: String
         """
+
         # '/usr/local/dsaX/bin/dsaX_correlator_udpdb_thread -b 1 -f /mnt/nfs/code/dsaX/src/correlator_header_dsaX.txt -k caca -i 10.10.9.1 -p 4011'
         return '{} -b {} -f {} -k {} -i {} -p {}'.format(cmd, b, f, k, ip, p)
 
@@ -409,9 +415,10 @@ class Correlator:
         :return: capture log filename
         :rtype: String
         """
+
         # '/mnt/nfs/runtime/tmplog/capture_log_'+machine+'.log'
         return '{}/capture_log_{}.log'.format(log_root, self.machine_name)
-        
+
     def _capture(self, log_root):
         """Private helper to run capture command
 
@@ -423,11 +430,11 @@ class Correlator:
         log_fn = self._capture_log_filename(log_root)
         with open(log_fn, 'w') as log:
             capture_cmd = self._capture_cmd(self.cmn['capture']['cmd'],
-                                           self.cmn['capture']['b'],
-                                           self.cmn['capture']['filename'],
-                                           self.cmn['capture']['k'],
-                                           self.cmn['capture']['port'],
-                                           self.cfg['capture']['ip'])
+                                            self.cmn['capture']['b'],
+                                            self.cmn['capture']['filename'],
+                                            self.cmn['capture']['k'],
+                                            self.cmn['capture']['port'],
+                                            self.cfg['capture']['ip'])
             cmd = self._subprocess_cmd(self.machine_name, capture_cmd)
             # capture_proc = subprocess.Popen('ssh user@'+machine+' "source ~/.bashrc; '+capture+'"', shell = True, stdout=capture_log, stderr=capture_log)
             subprocess.Popen(cmd, shell=True, stdout=log, stderr=log)
@@ -438,7 +445,7 @@ class Correlator:
         :param name: Process name to stop.
         :type name: String
         """
-        
+
         # 'ssh user@'+machine+' "source ~/.bashrc; killall -q dsaX_correlator_udpdb_thread"'
         cmd = 'ssh user@{} "source ~/.bashrc; killall -q {}"'.format(self.machine_name, name)
         output = subprocess.Popen(cmd, shell=True)
@@ -447,7 +454,7 @@ class Correlator:
     def cbuffers(self):
         """Create DADA buffers.
         """
-        
+
         sys.stderr.write('creating dada buffers on {}\n'.format(self.machine_name))
         for buf in self.cmn['buffer']:
             self._create_buffer(buf['k'], buf['b'], buf['c'], buf['n'])
@@ -482,23 +489,23 @@ class Correlator:
         :param cmd_dict: Dictionary containing command to run
         :type cmd_dict: Dictionary
         """
-        
+
         sys.stderr.write("Correlator.process() cmd_dict= {}\n".format(cmd_dict))
-        cmd =  cmd_dict['cmd']
+        cmd = cmd_dict['cmd']
         cmd in self.known_commands and self.known_commands[cmd]()
 
     def start_rx(self):
         """Start receivers
         """
-        
+
         sys.stderr.write('Starting cpscr\n')
         self._cpscr(self.cmn['cpscr']['cmd'], self.cmn['cpscr']['log'])
         sleep(0.1)
-        
+
         sys.stderr.write('Starting final\n')
         self._final(self.cmn['final']['log'])
         sleep(0.1)
-        
+
         sys.stderr.write('Starting massager\n')
         self._massager(self.cmn['massager']['log'])
         sleep(0.1)
@@ -507,7 +514,7 @@ class Correlator:
         for idx, ar in enumerate(self.cmn['ar'], start=1):
             self._ar(self.cmn['log_dir'], idx)
             sleep(0.1)
-            
+
         sys.stderr.write('Starting nicdbs\n')
         for idx, ndb in enumerate(self.cfg['nicdb'], start=1):
             sys.stderr.write('  nicdb for -k {}\n'.format(ndb['k']))
@@ -534,7 +541,7 @@ class Correlator:
         self._capture(self.cmn['log_dir'])
         sleep(0.1)
 
-        
+
     def stop(self):
         """Stop all processes
         """
@@ -570,7 +577,7 @@ class Correlator:
         :return: JSON encode monitor data.
         :rtype: String
         """
-        
+
         utc = pytz.UTC
         mon_data = {}
         cur_time = datetime.datetime.utcnow(). \
