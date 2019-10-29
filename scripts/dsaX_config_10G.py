@@ -12,6 +12,9 @@ import sys
 import socket
 import os
 import pause
+import matplotlib
+# Must preceed import of matplotlib.pyplot
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from astropy.time import Time
 import snap_util as su
