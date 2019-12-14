@@ -25,13 +25,25 @@ class Correlator:
         # self.capture_ip = cfg['capture']['ip']
         self.cfg = cfg
         self.cmn = cmn
-        self.running = False
-        self.started_utc = "1970-01-01T00:00:00+00:00"
         self.known_commands = {}
         self.known_commands['cbuffers'] = self.cbuffers
         self.known_commands['start_rx'] = self.start_rx
         self.known_commands['start_tx'] = self.start_tx
         self.known_commands['halt'] = self.halt
+        self._init_state()
+
+    def _init_state(self):
+        self.running = False
+        self.started_utc = "1970-01-01T00:00:00+00:00"
+        self.bufferscreated = False
+        self.udpdbthreadstarted = False
+        self.fanoutstarted = False
+        self.txstarted = False
+        self.rxstarted = False
+        self.singlestarted = False
+        self.fancystarted = False
+        self.writevisstarted = False
+        self.cpscrbashstarted = False
 
     def _cpscr_log_filename(self, log_root):
         """Private helper to construct cpscr log filename.
@@ -217,7 +229,7 @@ class Correlator:
         with open(log_fn, 'w') as log:
             cmd = self._subprocess_cmd(self.machine_name, ar_cmd)
             subprocess.Popen(cmd, shell=True, stdout=log, stderr=log)
-
+            
     def _ndb_log_filename(self, log_dir, idx):
         """Private helper to construct ndb log filename.
 
@@ -458,6 +470,7 @@ class Correlator:
         sys.stderr.write('creating dada buffers on {}\n'.format(self.machine_name))
         for buf in self.cmn['buffer']:
             self._create_buffer(buf['k'], buf['b'], buf['c'], buf['n'])
+        mon_dat['bufferscreated'] = True
 
     def _destroy_buffer(self, name):
         """Private helper to destroy dada buffer
@@ -468,7 +481,9 @@ class Correlator:
 
         # 'ssh user@'+machine+' "source ~/.bashrc; dada_db -k dbda -d"'
         cmd = 'ssh user@{} "source ~/.bashrc; dada_db -k {} -d"'.format(self.machine_name, name)
-        os.system(cmd)
+        # return Unix error status. non-zero = fail
+        return os.system(cmd)
+
 
     def _create_buffer(self, name, b, c, n):
         """Private helper to create DADA buffer on local machine.
@@ -501,19 +516,23 @@ class Correlator:
         sys.stderr.write('Starting cpscr\n')
         self._cpscr(self.cmn['cpscr']['cmd'], self.cmn['cpscr']['log'])
         sleep(0.1)
-
+        self.cpscrbashstarted = True
+        
         sys.stderr.write('Starting final\n')
         self._final(self.cmn['final']['log'])
         sleep(0.1)
-
+        self.writevisstarted = True
+        
         sys.stderr.write('Starting massager\n')
         self._massager(self.cmn['massager']['log'])
         sleep(0.1)
+        self.fancystarted = True
 
         sys.stderr.write('Starting expands\n')
         for idx, ar in enumerate(self.cmn['ar'], start=1):
             self._ar(self.cmn['log_dir'], idx)
             sleep(0.1)
+        self.singlestarted = True
 
         sys.stderr.write('Starting nicdbs\n')
         for idx, ndb in enumerate(self.cfg['nicdb'], start=1):
@@ -521,48 +540,139 @@ class Correlator:
             self._ndb(self.cmn['log_dir'], idx, ndb)
             sleep(0.1)
 
+        self.rxstarted = True
+
     def start_tx(self):
         """Start transmittes.
         """
 
         sys.stderr.write('Starting dbnics\n')
+        dbn_status = True
         for idx, dbn in enumerate(self.cfg['dbnic'], start=1):
-            self._dbn(self.cmn['log_dir'],
-                      idx,
-                      self.cfg['dbnic_port'],
-                      dbn)
+            try:
+                self._dbn(self.cmn['log_dir'],
+                          idx,
+                          self.cfg['dbnic_port'],
+                          dbn)
+            catch OSError as ose:
+                dbn_status &= False
+            catch ValueError as ve:
+                dbn_status &= False
             sleep(0.1)
 
         sys.stderr.write('Starting fanout\n')
-        self._fanout(self.cmn['log_dir'])
+        fan_status = False
+        try:
+            self._fanout(self.cmn['log_dir'])
+            fans_status = True
+        except OSError as ose:
+            fan_status = False
+        except ValueError as ve:
+            fan_status = False
+        # 2.7
+        except IOError as ioe:
+            fan_status = False
         sleep(0.1)
+        self.fanoutstarted = fan_status
 
         sys.stderr.write('Starting capture\n')
-        self._capture(self.cmn['log_dir'])
+        cap_status = False
+        try:
+            self._capture(self.cmn['log_dir'])
+            cap_status = True
+        except OSError as ose:
+            cap_status = False
+        except ValueError as ve:
+            cap_status = False
+        # 2.7
+        except IOError as ioe:
+            cap_status = False
         sleep(0.1)
-
+        self.udpdbthreadstarted = cap_status
+        
+        self.txstarted = dbn_status && fan_status && cap_status
 
     def stop(self):
         """Stop all processes
         """
 
         sys.stderr.write('Killing everything\n')
-        self._stop_process('dsaX_correlator_udpdb_thread')
-        self._stop_process('dsaX_correlator_fanout')
-        self._stop_process('dsaX_dbnic')
-        self._stop_process('dsaX_nicdb')
-        self._stop_process('dsaX_single')
-        self._stop_process('dsaX_fancy')
-        self._stop_process('dsaX_writevis')
-        self._stop_process('cpscr.bash')
+        try:
+            self._stop_process('dsaX_correlator_udpdb_thread')
+            self.udpdbthreadstarted = False
+        except OSError as ose:
+            pass
+        except ValueError as ve:
+            pass
+
+        try:
+            self._stop_process('dsaX_correlator_fanout')
+            self.fanoutstarted = False
+        except OSError as ose:
+            pass
+        except ValueError as ve:
+            pass
+
+        try:
+            self._stop_process('dsaX_dbnic')
+            self.dbnicstarted = False
+            self.txstarted = False
+        except OSError as ose:
+            pass
+        except ValueError as ve:
+            pass
+
+        try:
+            self._stop_process('dsaX_nicdb')
+            self.nicdbstarted = False
+            self.rxstarted = False
+        except OSError as ose:
+            pass
+        except ValueError as ve:
+            pass
+
+        try:
+            self._stop_process('dsaX_single')
+            self.singlestarted = False
+        except OSError as ose:
+            pass
+        except ValueError as vi:
+            pass
+
+        try:
+            self._stop_process('dsaX_fancy')
+            self.fancystarted = False
+        except OSError as ose:
+            pass
+        except ValueError as vi:
+            pass
+
+        try:
+            self._stop_process('dsaX_writevis')
+            self.writevisstarted = False
+        except OSError as ose:
+            pass
+        except ValueError as vi:
+            pass
+
+        try:
+            self._stop_process('cpscr.bash')
+            self.cpscrbashstarted = False
+        except OSError as ose:
+            pass
+        except ValueError as vi:
+            pass
 
     def dbuffers(self):
         """Delete all DADA buffers
         """
 
         sys.stderr.write('destroying dada buffers on {}\n'.format(self.machine_name))
+        status = 1
         for buf in self.cmn['buffer']:
-            self._destroy_buffer(buf['k'])
+            status &= self._destroy_buffer(buf['k'])
+        if stataus == 0:
+            self.bufferscreated = False
 
     def halt(self):
         """Stop all processes and destroy DADA buffers.
@@ -587,6 +697,17 @@ class Correlator:
         mon_data['cap_ip'] = self.cfg['capture']['ip']
         mon_data['running'] = self.running
         mon_data['started_utc'] = self.started_utc
+        mon_data['bufferscreated'] = self.bufferscreated
+        mon_data['rxstarted'] = self.rxstarted
+        mon_data['txstarted'] = self.txstarted
+        mon_data['cpscrbashstarted'] = self.cpscrbashstarted
+        mon_data['fancystarted'] = self.fancystarted
+        mon_data['singlestarted'] = self.singlestarted
+        mon_data['writevisstarted'] = self.writevisstarted
+        mon_data['udpdbthreadstarted'] = self.udpdbthreadstarted
+        mon_data['fanoutstarted'] = self.fanoutstarted
+        mon_data['dbnicstarted'] = self.dbnicstarted
+        mon_data['nicdbstarted'] = self.nicdbstarted
         mon_data['sim'] = False
 
         try:

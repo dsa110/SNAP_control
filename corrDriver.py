@@ -150,7 +150,7 @@ def process_run(args):
     watch_ids = []
 
     #for idx, my_corr in enumerate(my_corrs, start=1):
-    valid_corrs = [ALL_CORRS, args.machine_name]
+    valid_corrs = [args.machine_name]
     for name in valid_corrs:
         cmd = etcd_params['corr_command'] + str(name)
         if my_corr is not None:
@@ -160,11 +160,11 @@ def process_run(args):
 
     while True:
         #for idx, my_corr in enumerate(my_corrs, start=1):
-        #key = '/mon/corr/' + str(args.machine_name)
+        key = '/mon/corr/' + str(args.machine_name)
         # print('corrDriver.process_run() mon key= {}'.format(key))
-        # md = my_corr.get_monitor_data()
-        # print(md)
-        # etcd.put(key, md)
+        md = my_corr.get_monitor_data()
+        print(md)
+        etcd.put(key, md)
         sleep(1)
 
 if __name__ == '__main__':
