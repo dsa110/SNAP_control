@@ -38,21 +38,6 @@ def read_yaml(fname):
             return None
 
 
-def dprint(msg, level, dbg=True):
-    """Simple print which can be turned off.
-
-    :param msg: String to print.
-    :param level: String preceeding msg(typically INFO, WARN etc)
-    :param dbg: Boolean to print or not.
-    :type msg: String
-    :type level: String
-    :type dbg: Boolean
-    """
-
-    if dbg:
-        print("{}: {}".format(level, msg))
-
-
 def parse_endpoint(endpoint):
     """Parse the endpoint string in the first element of the list.
        Go allows multiple endpoints to be specified

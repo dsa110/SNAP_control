@@ -2,6 +2,31 @@
     SNAP boards.
 """
 import yaml
+import time
+from astropy.time import Time
+
+def time_to_mjd(t):
+    """ converts time.time() to mjd
+    """
+
+    tt = time.gmtime(t)
+    s = str(tt.tm_year)+"-"+str(tt.tm_mon)+"-"+str(tt.tm_mday)+"T"+str(tt.tm_hour)+":"+str(tt.tm_min)+":"+str(tt.tm_sec)
+    at = Time(s,format='isot',scale='utc')
+    return(at.mjd)
+
+def dprint(msg, level, dbg=True):
+    """Simple print which can be turned off.
+    :param msg: String to print.
+    :param level: String preceeding msg(typically INFO, WARN etc)
+    :param dbg: Boolean to print or not.
+    :type msg: String
+    :type level: String
+    :type dbg: Boolean
+    """
+
+    if dbg:
+        print("{}: {}".format(level, msg))
+                    
 
 
 def fpga_encode_helper(arr):
