@@ -38,7 +38,9 @@ class dsaX_corr:
         self.known_commands = {}
         self.known_commands['init'] = self.init
         self.known_commands['arm'] = self.arm
-
+        self.known_commands['mon'] = self.get_monitor_data
+        
+        
     def init(self):
         """ Initialize all SNAP blocks, and configure freq slots
         """
