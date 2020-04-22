@@ -852,10 +852,10 @@ class Eq(Block):
     def initialize(self):
         """
         Initialize block, setting coefficients to some nominally sane value.
-        Currently, this is 100.0
+        Currently, this is 50.0
         """
         for stream in range(self.nstreams):
-            self.set_coeffs(stream, 100*np.ones(self.ncoeffs,dtype='>%s'%self.format))
+            self.set_coeffs(stream, 50*np.ones(self.ncoeffs,dtype='>%s'%self.format))
 
 class EqTvg(Block):
     def __init__(self, host, name, nstreams=8, nchans=2**13, logger=None):

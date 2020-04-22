@@ -866,6 +866,8 @@ class HeraCorrelator(object):
         if after_sync - before_sync > 0.5:
             self.logger.warning("It took longer than expected to arm sync!")
 
+        return(sync_time)
+            
     def sync_with_delay(self, sync_time_s, delay_ms, adc_clk_rate=500e6, adc_demux=2):
         """
         Resync all boards at the integer UNIX time `sync_time_s`,

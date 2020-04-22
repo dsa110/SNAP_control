@@ -1,0 +1,257 @@
+""" Handle snap configuration
+"""
+import pytz
+import json
+import numpy as np
+import struct
+import time
+import datetime
+import sys
+import socket
+import os
+import snap_util as su
+from hera_corr_f import HeraCorrelator
+
+class DsaXConfig:
+    """ DsaXConfig is a class for handling SNAP configuration
+        config_file is the overall corr config file
+    """
+    def __init__(self, config_file):
+
+        self.config_file = config_file
+        self.corr = HeraCorrelator(redishost=None, config=config_file, use_redis=False)
+
+        # do some basic checks. 
+        if len(self.corr.fengs) == 0:
+            su.dprint("No F-Engines are connected. Is the power off?","ERROR")
+            exit()
+        if not self.corr.config_is_valid:
+            su.dprint('Currently loaded config is invalid',"ERROR")
+            exit()
+        
+        # attributes to deal with commands
+        self.programmed = True
+        not_programmed = [feng.fpga.host for feng in self.corr.fengs if not feng.is_programmed()]
+        if len(not_programmed) > 0:
+            self.programmed = False
+        self.initialized = False
+        self.mansync = False
+        self.armed = False
+        self.armed_mjd = "1970-01-01T12:00:00"
+        self.level_mjd = self.armed_mjd
+        self.known_commands = {}
+        self.known_commands['prog'] = self.prog
+        self.known_commands['forceprog'] = self.forceprog
+        self.known_commands['init'] = self.init
+        self.known_commands['arm'] = self.arm
+        self.known_commands['level'] = self.level
+
+        # attributes to deal with monitoring
+        
+    def prog(self):
+        """ Program all unprogrammed SNAPs
+        """
+
+        self.programmed = True
+        not_programmed = [feng.fpga.host for feng in self.corr.fengs if not feng.is_programmed()]
+        if len(not_programmed) > 0:
+            self.programmed = False
+
+        su.dprint("Boards not programmed: "+str(not_programmed),"INFO")
+        
+        self.corr.program(unprogrammed_only=True)        
+        self.programmed = True
+
+        not_programmed = [feng.fpga.host for feng in self.corr.fengs if not feng.is_programmed()]
+        if len(not_programmed) > 0:
+            self.programmed = False
+            su.dprint("prog failed. boards not programmed: "+str(not_programmed),"ERROR")
+
+    def forceprog(self):
+        """ Program all SNAPs
+        """
+        
+        self.corr.program(unprogrammed_only=False)        
+        self.programmed = True
+
+        not_programmed = [feng.fpga.host for feng in self.corr.fengs if not feng.is_programmed()]
+        if len(not_programmed) > 0:
+            self.programmed = False
+            su.dprint("forceprog failed. boards not programmed: "+str(not_programmed),"ERROR")
+    
+            
+        
+    def init(self):
+        """ Initialize all SNAP blocks, and configure freq slots
+        """
+
+        self.corr.disable_output()
+        self.corr.initialize(multithread=True, uninitialized_only=False)        
+        if not self.corr.configure_freq_slots():
+            su.dprint("init failed. freq slots not configured","ERROR")
+        else:
+            self.initialized = True
+        not_initialized = [feng.fpga.host for feng in self.corr.fengs if not feng.is_initialized()]
+        if len(not_initialized) > 0:
+            self.initialized = False
+            su.dprint("init failed. boards not initialized: "+str(not_initialized),"ERROR")
+
+
+    def arm(self):
+        """ Arm all SNAP boards. Manual sync if set
+        """
+
+        self.corr.disable_output()
+        self.corr.do_for_all_f("change_period", block="sync", args=[0])
+        sync_time = self.corr.resync(manual=self.mansync)
+        self.corr.enable_output()
+        self.armed = True
+        su.dprint("Synced on (UTC): "+time.ctime(sync_time),"INFO")
+        
+        self.armed_mjd = su.time_to_mjd(sync_time)        
+        
+
+    def level(self):
+        """ Flattens the bandpass using the eq_coeffs. 
+            Will only work if armed.
+        """
+
+        ### TODO: multithread this
+
+        for feng in self.corr.fengs:
+
+            try:
+                a = feng.eth.get_status()['tx_ctr']; time.sleep(1); b = feng.eth.get_status()['tx_ctr']
+            except:
+                su.dprint("cannot tell if TX is on: "+feng.fpga.host,"ERROR")
+                return()
+            if (b-a) == 0:
+                su.dprint("TX is off: "+feng.fpga.host,"ERROR")
+                return()
+            
+            for st in range(6):
+                
+                bp = np.real(feng.corr.get_new_corr(int(st),int(st)))
+                bp[np.where(bp==0.0)] = np.median(bp)
+                try:
+                    coeffs = 50.*np.median(bp)/bp                
+                    feng.eq.set_coeffs(int(st),coeffs)
+                    su.dprint("Set coeffs for stream "+str(st),"INFO")
+                except:
+                    su.dprint("couldn't set coeffs for stream "+str(st),"ERROR")
+                    su.dprint("min "+str(coeffs.min())+" max "+str(coeffs.max()),"ERROR")
+                    
+
+        self.level_mjd = su.time_to_mjd(time.time())
+                
+
+    def process(self, cmd_dict):
+        """Convert etcd commands local commands.
+
+        :param cmd: etcd value which is a dictionary 'Cmd' as the key
+        :type: Dictionary
+        """
+        su.dprint("dsaX_config_10G.process(). cmd_dict= {}".format(cmd_dict),"INFO")
+        cmd = cmd_dict['cmd']
+        su.dprint("dsaX_config_10G.process(). cmd= {}".format(cmd),"INFO")
+        cmd in self.known_commands and self.known_commands[cmd]()
+
+    def get_monitor_data(self):
+        """ Return monitor data in JSON format
+            Returns a dictionary of JSON strings, one for each feng. 
+            Some information is common to all fengs. 
+        """
+
+        all_mon_data = {}
+        utc = pytz.UTC
+        cur_time = datetime.datetime.utcnow().replace(tzinfo=utc).isoformat()
+        snap_ctr = 0
+
+        # TODO: implement lookup table for SNAP hosts to numbers in etcd
+        
+        for feng in self.corr.fengs:
+                    
+            mon_data = {}            
+
+            # common stuff
+            mon_data['time'] = cur_time        
+            mon_data['prog'] = self.programmed
+            mon_data['init'] = self.initialized
+            mon_data['armed'] = self.armed
+            mon_data['armed_mjd'] = self.armed_mjd
+            mon_data['level_utc'] = self.level_mjd
+            mon_data['sim'] = False
+
+            # per-SNAP stuff
+
+            fpga_stats = feng.get_fpga_stats()
+            mns,pows,rmss = feng.input.get_stats(sum_cores=True)
+            ant_ids = feng.ant_indices
+            pfb_overflow = feng.pfb.is_overflowing()
+            cl1 = feng.eq.clip_count(); time.sleep(0.5); cl2 = feng.eq.clip_count()
+            clip_rate = 2.*(cl2-cl1)
+            eth_status = feng.eth.get_status()
+            host = feng.host
+            bp0 = np.real(feng.corr.get_new_corr(0,0)).tolist()
+            bp1 = np.real(feng.corr.get_new_corr(1,1)).tolist()
+            bp2 = np.real(feng.corr.get_new_corr(2,2)).tolist()
+            bp3 = np.real(feng.corr.get_new_corr(3,3)).tolist()
+            bp4 = np.real(feng.corr.get_new_corr(4,4)).tolist()
+            bp5 = np.real(feng.corr.get_new_corr(5,5)).tolist()
+            h0 = feng.input.get_histogram(0)[1].tolist()
+            h1 = feng.input.get_histogram(1)[1].tolist()
+            h2 = feng.input.get_histogram(2)[1].tolist()
+            h3 = feng.input.get_histogram(3)[1].tolist()
+            h4 = feng.input.get_histogram(4)[1].tolist()
+            h5 = feng.input.get_histogram(5)[1].tolist()
+            
+            mon_data['uptime'] = fpga_stats['uptime']
+            mon_data['fpga_temp'] = fpga_stats['temp']
+            mon_data['host'] = host
+            mon_data['ant0'] = ant_ids[0]
+            mon_data['ant1'] = ant_ids[1]
+            mon_data['ant2'] = ant_ids[2]
+            mon_data['ant0_A_mn'] = mns[0]
+            mon_data['ant0_B_mn'] = mns[1]
+            mon_data['ant1_A_mn'] = mns[2]
+            mon_data['ant1_B_mn'] = mns[3]
+            mon_data['ant2_A_mn'] = mns[4]
+            mon_data['ant2_B_mn'] = mns[5] 
+            mon_data['ant0_A_rms'] = rmss[0]
+            mon_data['ant0_B_rms'] = rmss[1]
+            mon_data['ant1_A_rms'] = rmss[2]
+            mon_data['ant1_B_rms'] = rmss[3]
+            mon_data['ant2_A_rms'] = rmss[4]
+            mon_data['ant2_B_rms'] = rmss[5] 
+            mon_data['pfb_overflow'] = pfb_overflow
+            mon_data['eq_clip_rate'] = clip_rate
+            mon_data['eth_tx_ctr'] = eth_status['tx_ctr']
+            mon_data['eth_tx_err'] = eth_status['tx_err']
+            mon_data['eth_tx_ctr'] = eth_status['tx_ctr']
+            mon_data['eth_tx_of'] = eth_status['tx_of']
+            mon_data['eth_tx_vld'] = eth_status['tx_vld']
+            mon_data['ant0_A_bp'] = bp0
+            mon_data['ant0_B_bp'] = bp1
+            mon_data['ant1_A_bp'] = bp2
+            mon_data['ant1_B_bp'] = bp3
+            mon_data['ant2_A_bp'] = bp4
+            mon_data['ant2_B_bp'] = bp5
+            mon_data['ant0_A_h'] = h0
+            mon_data['ant0_B_h'] = h1
+            mon_data['ant1_A_h'] = h2
+            mon_data['ant1_B_h'] = h3
+            mon_data['ant2_A_h'] = h4
+            mon_data['ant2_B_h'] = h5
+            
+
+            try:
+                md_json = json.dumps(mon_data)
+                all_mon_data[str(snap_ctr)] = md_json
+            except ValueError:
+                su.dprint("get_monitor_data(): JSON encode error. Check JSON. mon_data = {}".format(mon_data), 'ERR')
+                return
+
+            snap_ctr += 1
+
+        return(all_mon_data)
+                
