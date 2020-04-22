@@ -12,7 +12,7 @@ import os
 import snap_util as su
 from hera_corr_f import SnapFengine
 
-class DsaXConfig:
+class dsaX_snap:
     """ DsaXConfig is a class for handling SNAP configuration
         host is the hostname of the SNAP
         This class handles the prog, forceprog, level, and get_monitor_data commands

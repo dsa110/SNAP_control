@@ -12,8 +12,8 @@ import os
 import snap_util as su
 from hera_corr_f import HeraCorrelator
 
-class DsaXConfig:
-    """ DsaXConfig is a class for handling SNAP configuration
+class dsaX_corr:
+    """ dsaX_corr is a class for handling corr configuration
         config_file is the overall corr config file
         This class handles the init, arm, and mon commands
     """
