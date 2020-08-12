@@ -35,10 +35,13 @@ class dsaX_snap:
         
         # attributes to deal with commands
         self.initialized = False
+        self.monon = False
+        self.ismon = False
         if self.feng.is_programmed():
             self.programmed = True
             if self.feng.is_initialized():
                 self.initialized = True
+                self.monon = True
         else:            
             self.programmed = False
         
@@ -49,11 +52,25 @@ class dsaX_snap:
         self.known_commands['arm'] = self.arm
         self.known_commands['level'] = self.level
         self.known_commands['mon'] = self.get_monitor_data
+        self.known_commands['test'] = self.test
 
+    def test(self):
+        """ tests reception of command
+        """
+
+        self.feng.logger.info("test successful")
         
     def prog(self):
-        """ Program all SNAPs, and do basic init. won't configure freq slots
+        """ Program SNAP, and do basic init. won't configure freq slots
         """
+
+        # wait for ismon to be False
+        while self.ismon:
+            self.feng.logger.info("waiting for monitoring to finish...")
+            time.sleep(0.5)
+        
+        # turn off monitoring
+        self.monon = False
 
         # program the boards
         self.feng.fpga.transport.prog_user_image()
@@ -73,14 +90,9 @@ class dsaX_snap:
             self.initialized = False
             self.feng.logger.error("init failed")
 
-        self.feng.logger.info("initialized")
+        self.feng.logger.info("initialized - configuring freq slots")
 
-
-    def arm(self):
-        """ 
-        Arm this board, after configuring freq slots
-        """        
-        
+        # config freq slots
         n_xengs = self.corr.config.get('n_xengs', 16)
         chans_per_packet = self.corr.config.get('chans_per_packet', 384) # Hardcoded in firmware
         self.feng.logger.info('Configuring frequency slots for %d X-engines, %d channels per packet' % (n_xengs, chans_per_packet))
@@ -106,6 +118,21 @@ class dsaX_snap:
 
         self.feng.logger.info('Configured frequency slots')
 
+        
+        self.monon = True
+
+    def arm(self):
+        """ 
+        Arm this board, after configuring freq slots
+        """        
+        # wait for ismon to be False
+        while self.ismon:
+            self.feng.logger.info("waiting for monitoring to finish...")
+            time.sleep(0.5)
+        
+        # turn off monitoring
+        self.monon = False
+        
         # do arming
         self.feng.eth.disable_tx()
         before_sync = time.time()
@@ -126,6 +153,8 @@ class dsaX_snap:
         self.feng.eth.enable_tx()
 
         self.armed_mjd = su.time_to_mjd(sync_time)
+        time.sleep(3)
+        self.monon = True
         
         
     def level(self):
@@ -165,9 +194,9 @@ class dsaX_snap:
         :param cmd: etcd value which is a dictionary 'Cmd' as the key
         :type: Dictionary
         """
-        su.dprint("dsaX_config_10G.process(). cmd_dict= {}".format(cmd_dict),"INFO")
+        self.feng.logger.info("process: cmd_dict= {}".format(cmd_dict))
         cmd = cmd_dict['cmd']
-        su.dprint("dsaX_config_10G.process(). cmd= {}".format(cmd),"INFO")
+        self.feng.logger.info("process: cmd= {}".format(cmd))
         cmd in self.known_commands and self.known_commands[cmd]()
 
     def get_monitor_data(self):
@@ -175,7 +204,12 @@ class dsaX_snap:
             Returns a dictionary of JSON strings, one for each feng. 
             Some information is common to all fengs. 
         """
+        
+        if self.monon is False:
+            return -1
 
+        self.ismon = True
+        
         all_mon_data = {}
         cur_time = su.time_to_mjd(time.time())
 
@@ -252,6 +286,7 @@ class dsaX_snap:
         mon_data['ant2_A_h'] = h4
         mon_data['ant2_B_h'] = h5
         
+        self.ismon = False
         
         try:
             md_json = json.dumps(mon_data)
@@ -259,6 +294,6 @@ class dsaX_snap:
         except ValueError:
             su.dprint("get_monitor_data(): JSON encode error. Check JSON. mon_data = {}".format(mon_data), 'ERR')
             return
-
+        
         return(all_mon_data)
                 

@@ -11,12 +11,10 @@ from os.path import dirname
 from os.path import realpath
 import sys
 import syslog
-from pkg_resources import Requirement, resource_filename
-etcd_conf_file = resource_filename(Requirement.parse("SNAP_control"), "conf/etcdConfig.yml")
-sys.path.append('../src')
-import helpers
+from SNAP_control import dsaX_snap, helpers
+import logging
 logger = helpers.add_default_log_handlers(logging.getLogger("snapmc"))
-import dsaX_snap
+
 
 DBG = True
 
@@ -80,8 +78,8 @@ def process_command(my_snap):
 
     def a(event):
         logger.info("snap.py.process_command() process_command() event= {}".format(event))
-        key = event.key.decode('utf-8')
-        value = event.value.decode('utf-8')
+        key = event.events[0].key.decode('utf-8')
+        value = event.events[0].value.decode('utf-8')
         logger.info("snap.py.process_command() key= {}, value= {}".format(key, value))
         # parse the JSON command
         cmd = parse_value(value)
@@ -99,7 +97,8 @@ def snap_run(args):
 
     ## TODO: link snap num to host name
 
-    etcd_params = read_yaml(args.etcd_conf_file)
+    logger.debug("ETCD config file: "+args.etcd_config_file)
+    etcd_params = read_yaml(args.etcd_config_file)
     logger.debug("CORR config file: "+args.corr_config_file)
     logger.debug("HOST SNAP: "+args.host_snap)
     logger.debug("SNAP NUMBER: "+str(args.snap_num))
@@ -121,11 +120,13 @@ def snap_run(args):
     while True:
         key = '/mon/snap/' + str(args.snap_num)
         md = my_snap.get_monitor_data()
-        etcd.put(key, md)
+        if md!=-1:
+            etcd.put(key, md)
         sleep(1)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-ef', '--etcd_config_file', type=str,default='etcdConfig.yaml')
     parser.add_argument('-cf', '--corr_config_file', type=str,
                         default='dsa_single.yml',
                         help='corr parameters')
