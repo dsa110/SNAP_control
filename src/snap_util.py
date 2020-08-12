@@ -3,15 +3,25 @@
 """
 import yaml
 import time
+import numpy as np
 
 def time_to_mjd(t):
     """ converts time.time() to mjd
     """
 
-    ## only does iso time string now
     tt = time.gmtime(t)
-    s = str(tt.tm_year)+"-"+str(tt.tm_mon)+"-"+str(tt.tm_mday)+"T"+str(tt.tm_hour)+":"+str(tt.tm_min)+":"+str(tt.tm_sec)
-    return(s)
+    Y = tt.tm_year
+    M = tt.tm_mon
+    D = tt.tm_mday + tt.tm_hour/24. + tt.tm_min/24./60. + tt.tm_sec/24./60./60.
+    
+    A = np.floor(Y/100.)
+    B = np.floor(A/4.)
+    C = 2.-A-B
+    E = np.floor(365.25*(Y+4716.))
+    F = np.floor(30.6001*(M+1.))
+    MJD = C+D+E+F-1514.5 - 2400000.5
+    
+    return(MJD)
 
 def dprint(msg, level, dbg=True):
     """Simple print which can be turned off.

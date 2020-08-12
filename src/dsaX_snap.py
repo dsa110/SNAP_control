@@ -10,59 +10,124 @@ import sys
 import socket
 import os
 import snap_util as su
-from hera_corr_f import SnapFengine
+from snap_fengine import SnapFengine
+from hera_corr import HeraCorrelator
 
 class dsaX_snap:
-    """ DsaXConfig is a class for handling SNAP configuration
+    """  is a class for handling SNAP configuration
         host is the hostname of the SNAP
-        This class handles the prog, forceprog, level, and get_monitor_data commands
+        config_file is the config_file for the correlator
+        This class handles the prog, level, arm, and get_monitor_data commands
     """
-    def __init__(self, host):
+    def __init__(self, host, config_file):
 
         self.host = host
-        self.feng = SnapFengine(host,redishost=None)
+        self.corr = HeraCorrelator(config=config_file)
+        self.mansync = False
+        if self.corr.config['sync']=='manual':
+            self.mansync = True
+        self.feng = SnapFengine(host,ant_indices=self.corr.config['fengines'][host]['ants'])
 
         # do some basic checks. 
-        if not self.fpga.is_connected():
-            su.dprint("F-Engine is not connected. Is the power off?","ERROR")
+        if not self.feng.fpga.is_connected():
+            self.feng.logger.error("F-Engine is not connected. Is the power off?")
             exit()
         
         # attributes to deal with commands
+        self.initialized = False
         if self.feng.is_programmed():
             self.programmed = True
+            if self.feng.is_initialized():
+                self.initialized = True
         else:            
             self.programmed = False
-        self.level_mjd = "1970-01-01T12:00:00"
+        
+        self.armed_mjd = "55000.0"
+        self.level_mjd = "55000.0"
         self.known_commands = {}
         self.known_commands['prog'] = self.prog
-        self.known_commands['forceprog'] = self.forceprog
+        self.known_commands['arm'] = self.arm
         self.known_commands['level'] = self.level
         self.known_commands['mon'] = self.get_monitor_data
 
         
     def prog(self):
-        """ Program all unprogrammed SNAPs
+        """ Program all SNAPs, and do basic init. won't configure freq slots
         """
 
-        if self.programmed is False:
-            self.feng.fpga.transport.prog_user_image()
-            self.programmed = True
-            
-        if self.feng.is_programmed() is False:
-            self.programmed = False
-            su.dprint("prog failed","ERROR")
-
-    def forceprog(self):
-        """ Program all SNAPs
-        """
-
+        # program the boards
         self.feng.fpga.transport.prog_user_image()
         self.programmed = True
-            
+        self.feng.logger.info("possibly programmed, waiting 60s to check")
+        time.sleep(60)
         if self.feng.is_programmed() is False:
             self.programmed = False
-            su.dprint("forceprog failed","ERROR")                    
+            self.feng.logger.error("prog failed")
 
+        # do the init
+        self.feng.logger.info("programmed - now initializing")
+        self.feng.eth.disable_tx()
+        self.feng.initialize()
+        self.initialized = True
+        if self.feng.is_initialized() is False:
+            self.initialized = False
+            self.feng.logger.error("init failed")
+
+        self.feng.logger.info("initialized")
+
+
+    def arm(self):
+        """ 
+        Arm this board, after configuring freq slots
+        """        
+        
+        n_xengs = self.corr.config.get('n_xengs', 16)
+        chans_per_packet = self.corr.config.get('chans_per_packet', 384) # Hardcoded in firmware
+        self.feng.logger.info('Configuring frequency slots for %d X-engines, %d channels per packet' % (n_xengs, chans_per_packet))
+        dest_port = self.corr.config['dest_port'] 
+        for xn, xparams in self.corr.config['xengines'].items():
+            chan_range = xparams.get('chan_range', [xn*384, (xn+1)*384])
+            chans = range(chan_range[0], chan_range[1])
+            if (xn > n_xengs): 
+               self.feng.logger.error("Cannot have more than %d X-engs!!" % n_xengs)
+            ip = [int(i) for i in xparams['even']['ip'].split('.')]
+            ip_even = (ip[0]<<24) + (ip[1]<<16) + (ip[2]<<8) + ip[3]
+            ip = [int(i) for i in xparams['odd']['ip'].split('.')]
+            ip_odd = (ip[0]<<24) + (ip[1]<<16) + (ip[2]<<8) + ip[3]
+
+            self.feng.logger.info('%s: Setting Xengine %d: chans %d-%d: %s (even) / %s (odd)' % (self.feng.fpga.host, xn, chans[0], chans[-1], xparams['even']['ip'], xparams['odd']['ip']))
+            source_port = self.corr.config['fengines'][self.feng.host].get('source_port', dest_port + 1)            
+            self.feng.packetizer.assign_slot(xn, chans, [ip_even,ip_odd], self.feng.reorder, self.feng.ant_indices[0])
+            self.feng.eth.add_arp_entry(ip_even,xparams['even']['mac'])
+            self.feng.eth.add_arp_entry(ip_odd,xparams['odd']['mac'])
+
+        self.feng.eth.set_source_port(source_port)
+        self.feng.eth.set_port(dest_port)
+
+        self.feng.logger.info('Configured frequency slots')
+
+        # do arming
+        self.feng.eth.disable_tx()
+        before_sync = time.time()
+        if not self.mansync:
+            self.feng.logger.info('Waiting for PPS at time '+(time.asctime(time.gmtime(time.time()))))
+            self.feng.sync.wait_for_sync()
+            self.feng.logger.info('Syncing passed at time '+(time.asctime(time.gmtime(time.time()))))
+        self.feng.sync.arm_sync()
+        after_sync = time.time()
+        if self.mansync:
+            self.feng.logger.warning('Using manual sync trigger')
+            for i in range(3): # takes 3 syncs to trigger
+                self.feng.sync.sw_sync()
+                sync_time = int(time.time()) # roughly
+        else:
+            sync_time = int(before_sync) + 1 + 3 # Takes 3 PPS pulses to arm
+        self.feng.logger.info('Syncing was at '+(time.asctime(time.gmtime(sync_time))))
+        self.feng.eth.enable_tx()
+
+        self.armed_mjd = su.time_to_mjd(sync_time)
+        
+        
     def level(self):
         """ Flattens the bandpass using the eq_coeffs. 
             Will only work if armed.
@@ -73,10 +138,10 @@ class dsaX_snap:
         try:
             a = self.feng.eth.get_status()['tx_ctr']; time.sleep(1); b = feng.eth.get_status()['tx_ctr']
         except:
-            su.dprint("cannot tell if TX is on: "+feng.fpga.host,"ERROR")
+            self.feng.logger.error("cannot tell if TX is on: "+feng.fpga.host)
             return()
         if (b-a) == 0:
-            su.dprint("TX is off: "+self.feng.fpga.host,"ERROR")
+            self.feng.logger.error("TX is off: "+self.feng.fpga.host)
             return()
             
         for st in range(6):
@@ -86,10 +151,10 @@ class dsaX_snap:
             try:
                 coeffs = 50.*np.median(bp)/bp                
                 self.feng.eq.set_coeffs(int(st),coeffs)
-                su.dprint("Set coeffs for stream "+str(st),"INFO")
+                self.feng.logger.info("Set coeffs for stream "+str(st))
             except:
-                su.dprint("couldn't set coeffs for stream "+str(st),"ERROR")
-                su.dprint("min "+str(coeffs.min())+" max "+str(coeffs.max()),"ERROR")
+                self.feng.logger.error("couldn't set coeffs for stream "+str(st))
+                self.feng.logger.error("min "+str(coeffs.min())+" max "+str(coeffs.max()))
                     
 
         self.level_mjd = su.time_to_mjd(time.time())
@@ -112,12 +177,8 @@ class dsaX_snap:
         """
 
         all_mon_data = {}
-        utc = pytz.UTC
-        cur_time = datetime.datetime.utcnow().replace(tzinfo=utc).isoformat()
-        snap_ctr = 0
+        cur_time = su.time_to_mjd(time.time())
 
-        # TODO: implement lookup table for SNAP hosts to numbers in etcd
-        
         feng = self.feng 
                     
         mon_data = {}            
@@ -125,7 +186,9 @@ class dsaX_snap:
         # common stuff
         mon_data['time'] = cur_time        
         mon_data['prog'] = self.programmed
-        mon_data['level_utc'] = self.level_mjd
+        mon_data['init'] = self.initialized
+        mon_data['armed_mjd'] = self.armed_mjd
+        mon_data['level_mjd'] = self.level_mjd
         mon_data['sim'] = False
 
         # per-SNAP stuff

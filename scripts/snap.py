@@ -9,18 +9,16 @@ import yaml
 import etcd3
 from os.path import dirname
 from os.path import realpath
-#python3
-#from pathlib import Path
 import sys
-TOP_OF_TREE = dirname(dirname(realpath(__file__)))
-# python3
-#sys.path.append(str(Path(TOP_OF_TREE + '/SNAP_control/scripts')))
-sys.path.append(TOP_OF_TREE + '/SNAP_control/scripts')
-from dsaX_config_10G import DsaXConfig
+import syslog
+from pkg_resources import Requirement, resource_filename
+etcd_conf_file = resource_filename(Requirement.parse("SNAP_control"), "conf/etcdConfig.yml")
+sys.path.append('../src')
+import helpers
+logger = helpers.add_default_log_handlers(logging.getLogger("snapmc"))
+import dsaX_snap
 
 DBG = True
-ALL_SNAPS = 0
-
 
 def read_yaml(fname):
     """Read a YAML formatted file.
@@ -68,8 +66,7 @@ def parse_value(value):
     try:
         rtn = json.loads(value)
     except ValueError:
-        dprint("parse_value(): JSON Decode Error. Check JSON. value= {}".
-               format(value), 'ERR')
+        logger.error("parse_value(): JSON Decode Error. Check JSON. value= {}".format(value))
     return rtn
 
 
@@ -82,15 +79,15 @@ def process_command(my_snap):
     """
 
     def a(event):
-        dprint("snap.py.process_command() process_command() event= {}".format(event), 'INFO', DBG)
+        logger.info("snap.py.process_command() process_command() event= {}".format(event))
         key = event.key.decode('utf-8')
         value = event.value.decode('utf-8')
-        dprint("snap.py.process_command() key= {}, value= {}".format(key, value), 'INFO', DBG)
+        logger.info("snap.py.process_command() key= {}, value= {}".format(key, value))
         # parse the JSON command
         cmd = parse_value(value)
         for key, val in cmd.items():
-            dprint("snap.py.process_command() cmd key= {}, cmd val= {}".format(key, val), 'INFO', DBG)
-        dprint("snap.py.process_command() a: cmd= {}".format(cmd), 'INFO', DBG)
+            logger.debug("snap.py.process_command() cmd key= {}, cmd val= {}".format(key, val))
+        logger.debug("snap.py.process_command() a: cmd= {}".format(cmd))
         my_snap.process(cmd)
     return a
 
@@ -100,51 +97,39 @@ def snap_run(args):
     :param args: Input arguments from argparse.
     """
 
-    dprint(args.etcd_file, 'INFO', DBG)
-    etcd_params = read_yaml(args.etcd_file)
+    ## TODO: link snap num to host name
 
-    dprint(args.snap_config_file, 'INFO', DBG)
-    snap_params = read_yaml(args.snap_config_file)
+    etcd_params = read_yaml(args.etcd_conf_file)
+    logger.debug("CORR config file: "+args.corr_config_file)
+    logger.debug("HOST SNAP: "+args.host_snap)
+    logger.debug("SNAP NUMBER: "+str(args.snap_num))
 
-    dprint(args.snap_num, 'INFO', DBG)
-
-    my_snaps = []
-    #for snap_num in snap_params['snaps']:
-    print("snap.py.snap_run() creatting process to handle snap: {}".format(args.snap_num))
-    my_snap = DsaXConfig(args.snap_num, snap_params['snap'][args.snap_num], snap_params['common'], snap_params['adc16'])
-    my_snaps.append(my_snap)
+    logger.info("snap.py.snap_run() creatting process to handle snap: {}".format(args.host_snap))
+    my_snap = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file)
 
     etcd_host, etcd_port = parse_endpoint(etcd_params['endpoints'])
-    dprint("snap.py.snap_run() etcd host={}, etcd port={}".format(etcd_host, etcd_port), 'INFO')
+    logger.info("snap.py.snap_run() etcd host={}, etcd port={}".format(etcd_host, etcd_port))
     etcd = etcd3.client(host=etcd_host, port=etcd_port)
     watch_ids = []
 
-    #for idx, my_snap in enumerate(my_snaps, start=1):
-    valid_snaps = [ALL_SNAPS, args.snap_num]
-    for num in valid_snaps:
-        cmd = etcd_params['snap_command'] + str(num)
-        print('snap.py.snap_run() watch cmd= {}'.format(cmd))
-        watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
-        watch_ids.append(watch_id)
+    cmd = etcd_params['snap_command'] + str(args.snap_num)
+    logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
+    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
+    watch_ids.append(watch_id)
 
+    # main loop
     while True:
-        #for idx, my_snap in enumerate(my_snaps, start=1):
         key = '/mon/snap/' + str(args.snap_num)
-        # print('key= {}'.format(key))
         md = my_snap.get_monitor_data()
-        # print(md)
         etcd.put(key, md)
         sleep(1)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-ef', '--etcd_file', type=str,
-                        default='etcdConfig.yml',
-                        help='etcd parameters')
-    parser.add_argument('-sf', '--snap_config_file', type=str,
-                        default='snapConfig.yml',
-                        help='snap parameters')
-    parser.add_argument('-n', '--snap_num', type=int, help='SNAP number')
+    parser.add_argument('-cf', '--corr_config_file', type=str,
+                        default='dsa_single.yml',
+                        help='corr parameters')
+    parser.add_argument('-hs', '--host_snap', type=str, help='SNAP host name')
+    parser.add_argument('-n', '--snap_num', type=int, help='SNAP number in etcd')
     the_args = parser.parse_args()
-    dprint(the_args, 'INFO', DBG)
     snap_run(the_args)
