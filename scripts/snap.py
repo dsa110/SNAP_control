@@ -111,11 +111,19 @@ def snap_run(args):
     etcd = etcd3.client(host=etcd_host, port=etcd_port)
     watch_ids = []
 
+    # add watch on cmd for snapnum
     cmd = etcd_params['snap_command'] + str(args.snap_num)
     logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
     watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
     watch_ids.append(watch_id)
 
+    # add watch on cmd for snap 0
+    cmd = etcd_params['snap_command'] + str(0)
+    logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
+    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
+    watch_ids.append(watch_id)
+
+    
     # main loop
     while True:
         key = '/mon/snap/' + str(args.snap_num)
