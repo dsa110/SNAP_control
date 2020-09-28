@@ -43,36 +43,28 @@ initialize: True
 eth: True
 
 # Specify a full path to an F-Engine fpg files
-fpgfile: '/home/jackh/src/hera_corr_f/snap_fengine/outputs/snap_fengine_2019-08-29_1717.fpg'
+fpgfile: '/home/ubuntu/proj/dsa110-shell/SNAP_control/config/snap_fengine_nophase_2020-08-13_0941.fpg'
 
 # Destination port for SNAP data
 dest_port: 4011
 
-# fft_shift
-fft_shift: 0b0110111111111111
-
 fengines:
     snap00.sas.pvt:
         ants: [0, 1, 2]
-        phase_switch_index: 0
     snap01.sas.pvt:
-        ants: [0, 1, 2]
-        phase_switch_index: 0
+        ants: [3, 4, 5]
     snap02.sas.pvt:
-        ants: [0, 1, 2]
-        phase_switch_index: 0
+        ants: [6, 7, 8]
     snap03.sas.pvt:
-        ants: [0, 1, 2]
-        phase_switch_index: 0
+        ants: [9, 10, 11]
     snap04.sas.pvt:
-        ants: [0, 1, 2]
-        phase_switch_index: 0
+        ants: [12, 13, 14]
     snap05.sas.pvt:
-        ants: [0, 1, 2]
-        phase_switch_index: 0
+        ants: [15, 16, 17]
     snap06.sas.pvt:
-        ants: [0, 1, 2]
-        phase_switch_index: 0
+        ants: [18, 19, 20]
+    snap07.sas.pvt:
+        ants: [21, 22, 23]
 
 
 # Data is sent assuming a total of 32 Xengines and 
@@ -82,9 +74,9 @@ fengines:
 xengines:
     0:
         even:
-           ip: "10.41.0.44"
-           mac: 0x00163ef080e5
+           ip: "10.41.0.62"
+           mac: 0x00163e965996
         odd:
-           ip: "10.41.0.44"
-           mac: 0x00163ef080e5
+           ip: "10.41.0.62"
+           mac: 0x00163e965996
         chan_range: [1152, 1536]

@@ -68,7 +68,7 @@ def parse_value(value):
     return rtn
 
 
-def process_command(my_snap):
+def process_command(my_snap,etcd,keym,keym2):
     """Etcd watch callback function. Called when values of watched
        keys are updated.
 
@@ -86,7 +86,19 @@ def process_command(my_snap):
         for key, val in cmd.items():
             logger.debug("snap.py.process_command() cmd key= {}, cmd val= {}".format(key, val))
         logger.debug("snap.py.process_command() a: cmd= {}".format(cmd))
-        my_snap.process(cmd)
+        if cmd['cmd']=='mon':
+            data = my_snap.get_monitor_data()
+            if data!=-1:
+                etcd.put(keym2, data)
+        else:
+            my_snap.process(cmd)
+
+        if cmd['cmd']=='arm':
+            etcd.put(keym,json.dumps({'armed_mjd':my_snap.armed_mjd}))
+
+        
+        
+            
     return a
 
 def snap_run(args):
@@ -110,26 +122,29 @@ def snap_run(args):
     logger.info("snap.py.snap_run() etcd host={}, etcd port={}".format(etcd_host, etcd_port))
     etcd = etcd3.client(host=etcd_host, port=etcd_port)
     watch_ids = []
+    keym = '/mon/snap/' + str(args.snap_num) + '/armed_mjd'
+    keym2 = '/mon/snap/' + str(args.snap_num)
 
+    
     # add watch on cmd for snapnum
     cmd = etcd_params['snap_command'] + str(args.snap_num)
     logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
-    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
+    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2))
     watch_ids.append(watch_id)
 
     # add watch on cmd for snap 0
     cmd = etcd_params['snap_command'] + str(0)
     logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
-    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap))
+    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2))
     watch_ids.append(watch_id)
 
     
     # main loop
     while True:
-        key = '/mon/snap/' + str(args.snap_num)
-        md = my_snap.get_monitor_data()
-        if md!=-1:
-            etcd.put(key, md)
+        
+        #md = my_snap.get_monitor_data()
+        #if md!=-1:
+        #    etcd.put(key, md)
         sleep(1)
 
 if __name__ == '__main__':

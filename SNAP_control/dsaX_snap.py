@@ -45,8 +45,8 @@ class dsaX_snap:
         else:            
             self.programmed = False
         
-        self.armed_mjd = "55000.0"
-        self.level_mjd = "55000.0"
+        self.armed_mjd = 55000.0
+        self.level_mjd = 55000.0
         self.known_commands = {}
         self.known_commands['prog'] = self.prog
         self.known_commands['arm'] = self.arm
@@ -233,7 +233,7 @@ class dsaX_snap:
         pfb_overflow = feng.pfb.is_overflowing()
         cl1 = feng.eq.clip_count(); time.sleep(0.5); cl2 = feng.eq.clip_count()
         clip_rate = 2.*(cl2-cl1)
-        eth_status = feng.eth.get_status()
+        #eth_status = feng.eth.get_status()
         host = feng.host
         bp0 = np.real(feng.corr.get_new_corr(0,0)).tolist()
         bp1 = np.real(feng.corr.get_new_corr(1,1)).tolist()
@@ -268,11 +268,11 @@ class dsaX_snap:
         mon_data['ant2_B_rms'] = rmss[5] 
         mon_data['pfb_overflow'] = pfb_overflow
         mon_data['eq_clip_rate'] = clip_rate
-        mon_data['eth_tx_ctr'] = eth_status['tx_ctr']
-        mon_data['eth_tx_err'] = eth_status['tx_err']
-        mon_data['eth_tx_ctr'] = eth_status['tx_ctr']
-        mon_data['eth_tx_of'] = eth_status['tx_of']
-        mon_data['eth_tx_vld'] = eth_status['tx_vld']
+        #mon_data['eth_tx_ctr'] = eth_status['tx_ctr']
+        #mon_data['eth_tx_err'] = eth_status['tx_err']
+        #mon_data['eth_tx_ctr'] = eth_status['tx_ctr']
+        #mon_data['eth_tx_of'] = eth_status['tx_of']
+        #mon_data['eth_tx_vld'] = eth_status['tx_vld']
         mon_data['ant0_A_bp'] = bp0
         mon_data['ant0_B_bp'] = bp1
         mon_data['ant1_A_bp'] = bp2

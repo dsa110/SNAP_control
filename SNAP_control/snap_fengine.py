@@ -56,7 +56,6 @@ class SnapFengine(object):
             self.packetizer,
             self.eth,
             self.corr,
-            self.phaseswitch,
         ]
 
         self.initialized = False
