@@ -49,6 +49,7 @@ class dsaX_snap:
         self.level_mjd = 55000.0
         self.known_commands = {}
         self.known_commands['prog'] = self.prog
+        self.known_commands['prong'] = self.prong
         self.known_commands['arm'] = self.arm
         self.known_commands['level'] = self.level
         self.known_commands['mon'] = self.get_monitor_data
@@ -61,7 +62,7 @@ class dsaX_snap:
         self.feng.logger.info("test successful")
         
     def prog(self):
-        """ Program SNAP, and do basic init. won't configure freq slots
+        """ Program SNAP, and do basic init. configure freq slots
         """
 
         # wait for ismon to be False
@@ -121,6 +122,63 @@ class dsaX_snap:
         
         self.monon = True
 
+    def prong(self):
+        """ Do basic init. Configure freq slots
+        """
+
+        # wait for ismon to be False
+        while self.ismon:
+            self.feng.logger.info("waiting for monitoring to finish...")
+            time.sleep(0.5)
+        
+        # turn off monitoring
+        self.monon = False
+
+        if self.feng.is_programmed() is False:
+            self.programmed = False
+            self.feng.logger.error("prog failed")
+
+        # do the init
+        self.feng.logger.info("programmed - now initializing")
+        self.feng.eth.disable_tx()
+        self.feng.initialize()
+        self.initialized = True
+        if self.feng.is_initialized() is False:
+            self.initialized = False
+            self.feng.logger.error("init failed")
+
+        self.feng.logger.info("initialized - configuring freq slots")
+
+        # config freq slots
+        n_xengs = self.corr.config.get('n_xengs', 16)
+        chans_per_packet = self.corr.config.get('chans_per_packet', 384) # Hardcoded in firmware
+        self.feng.logger.info('Configuring frequency slots for %d X-engines, %d channels per packet' % (n_xengs, chans_per_packet))
+        dest_port = self.corr.config['dest_port'] 
+        for xn, xparams in self.corr.config['xengines'].items():
+            chan_range = xparams.get('chan_range', [xn*384, (xn+1)*384])
+            chans = range(chan_range[0], chan_range[1])
+            if (xn > n_xengs): 
+               self.feng.logger.error("Cannot have more than %d X-engs!!" % n_xengs)
+            ip = [int(i) for i in xparams['even']['ip'].split('.')]
+            ip_even = (ip[0]<<24) + (ip[1]<<16) + (ip[2]<<8) + ip[3]
+            ip = [int(i) for i in xparams['odd']['ip'].split('.')]
+            ip_odd = (ip[0]<<24) + (ip[1]<<16) + (ip[2]<<8) + ip[3]
+
+            self.feng.logger.info('%s: Setting Xengine %d: chans %d-%d: %s (even) / %s (odd)' % (self.feng.fpga.host, xn, chans[0], chans[-1], xparams['even']['ip'], xparams['odd']['ip']))
+            source_port = self.corr.config['fengines'][self.feng.host].get('source_port', dest_port + 1)            
+            self.feng.packetizer.assign_slot(xn, chans, [ip_even,ip_odd], self.feng.reorder, self.feng.ant_indices[0])
+            self.feng.eth.add_arp_entry(ip_even,xparams['even']['mac'])
+            self.feng.eth.add_arp_entry(ip_odd,xparams['odd']['mac'])
+
+        self.feng.eth.set_source_port(source_port)
+        self.feng.eth.set_port(dest_port)
+
+        self.feng.logger.info('Configured frequency slots')
+
+        
+        self.monon = True
+
+        
     def arm(self):
         """ 
         Arm this board, after configuring freq slots
