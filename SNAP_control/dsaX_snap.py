@@ -49,6 +49,7 @@ class dsaX_snap:
         self.level_mjd = 55000.0
         self.known_commands = {}
         self.known_commands['prog'] = self.prog
+        self.known_commands['progonly'] = self.progonly
         self.known_commands['prong'] = self.prong
         self.known_commands['arm'] = self.arm
         self.known_commands['level'] = self.level
@@ -60,6 +61,32 @@ class dsaX_snap:
         """
 
         self.feng.logger.info("test successful")
+
+    def progonly(self):
+        """ Program SNAP, and do basic init. configure freq slots
+        """
+
+        # wait for ismon to be False
+        while self.ismon:
+            self.feng.logger.info("waiting for monitoring to finish...")
+            time.sleep(0.5)
+        
+        # turn off monitoring
+        self.monon = False
+
+        # program the boards
+        self.feng.fpga.transport.prog_user_image()
+        self.programmed = True
+        self.feng.logger.info("possibly programmed, waiting 60s to check")
+        time.sleep(60)
+        if self.feng.is_programmed() is False:
+            self.programmed = False
+            self.feng.logger.error("prog failed")
+        else:
+            self.feng.logger.info("successfully programmed")
+
+        self.monon = True
+
         
     def prog(self):
         """ Program SNAP, and do basic init. configure freq slots
@@ -91,6 +118,9 @@ class dsaX_snap:
             self.initialized = False
             self.feng.logger.error("init failed")
 
+        # set delays to make switch happy
+        self.feng.sync.set_delay(self.corr.config['fengines'][self.feng.host]['sync_delay'])
+            
         self.feng.logger.info("initialized - configuring freq slots")
 
         # config freq slots
@@ -149,6 +179,9 @@ class dsaX_snap:
 
         self.feng.logger.info("initialized - configuring freq slots")
 
+        # set delays to make switch happy
+        self.feng.sync.set_delay(self.corr.config['fengines'][self.feng.host]['sync_delay'])
+        
         # config freq slots
         n_xengs = self.corr.config.get('n_xengs', 16)
         chans_per_packet = self.corr.config.get('chans_per_packet', 384) # Hardcoded in firmware
