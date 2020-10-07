@@ -55,6 +55,7 @@ class dsaX_snap:
         self.known_commands['level'] = self.level
         self.known_commands['mon'] = self.get_monitor_data
         self.known_commands['test'] = self.test
+        self.known_commands['set_delay'] = self.set_delay
 
     def test(self):
         """ tests reception of command
@@ -87,7 +88,35 @@ class dsaX_snap:
 
         self.monon = True
 
+    def set_delay(self,delays=[0,0,0,0,0,0]):
+        """ Set delays
+            delays: 6-element list of delays to add to SNAP inputs (ADC samples)
+        """
+
+        # wait for ismon to be False
+        while self.ismon:
+            self.feng.logger.info("waiting for monitoring to finish...")
+            time.sleep(0.5)
         
+        # turn off monitoring
+        self.monon = False
+
+        # error check
+        if len(delays) != 6:
+            self.feng.logger.error("delays list needs to be 6 elements long")
+            return()
+        delays_int = np.asarray(delays).astype(int)
+
+        # implement delays
+        for i in range(6):
+            self.feng.delay.set_delay(i,delays_int[i])
+
+        self.feng.logger.info("successfully set delays to "+str(delays_int))
+
+        self.monon = True
+        
+
+
     def prog(self):
         """ Program SNAP, and do basic init. configure freq slots
         """
@@ -226,6 +255,7 @@ class dsaX_snap:
         
         # do arming
         self.feng.eth.disable_tx()
+        self.feng.sync.change_period(0)
         before_sync = time.time()
         if not self.mansync:
             self.feng.logger.info('Waiting for PPS at time '+(time.asctime(time.gmtime(time.time()))))
@@ -318,6 +348,7 @@ class dsaX_snap:
 
         # per-SNAP stuff
 
+        sync_ct = feng.sync.count()
         fpga_stats = feng.get_fpga_stats()
         mns,pows,rmss = feng.input.get_stats(sum_cores=True)
         ant_ids = feng.ant_indices
@@ -338,7 +369,8 @@ class dsaX_snap:
         h3 = feng.input.get_histogram(3)[1].tolist()
         h4 = feng.input.get_histogram(4)[1].tolist()
         h5 = feng.input.get_histogram(5)[1].tolist()
-        
+
+        mon_data['sync_ct'] = sync_ct
         mon_data['uptime'] = fpga_stats['uptime']
         mon_data['fpga_temp'] = fpga_stats['temp']
         mon_data['host'] = host
