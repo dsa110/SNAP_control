@@ -89,12 +89,23 @@ def process_command(my_snap,etcd,keym,keym2):
         if cmd['cmd']=='mon':
             data = my_snap.get_monitor_data()
             if data!=-1:
-                etcd.put(keym2, data)
+                try:
+                    etcd.put(keym2, data)
+                except:
+                    logger.error("Could not place full mon into etcd")
         else:
             my_snap.process(cmd)
+            data = my_snap.simplemon()
+            try:
+                etcd.put(keym2, data)
+            except:
+                logger.error("Could not place simple mon into etcd")
 
         if cmd['cmd']=='arm':
-            etcd.put(keym,json.dumps({'armed_mjd':my_snap.armed_mjd}))
+            try:
+                etcd.put(keym,json.dumps({'armed_mjd':my_snap.armed_mjd}))
+            except:
+                logger.error("Could not place armed_mjd into etcd")
 
         
         
@@ -116,7 +127,7 @@ def snap_run(args):
     logger.debug("SNAP NUMBER: "+str(args.snap_num))
 
     logger.info("snap.py.snap_run() creatting process to handle snap: {}".format(args.host_snap))
-    my_snap = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file)
+    my_snap = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file,number=args.snap_num)
 
     etcd_host, etcd_port = parse_endpoint(etcd_params['endpoints'])
     logger.info("snap.py.snap_run() etcd host={}, etcd port={}".format(etcd_host, etcd_port))
@@ -129,6 +140,8 @@ def snap_run(args):
     # add watch on cmd for snapnum
     cmd = etcd_params['snap_command'] + str(args.snap_num)
     logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
+
+
     watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2))
     watch_ids.append(watch_id)
 

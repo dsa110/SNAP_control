@@ -19,10 +19,11 @@ class dsaX_snap:
         config_file is the config_file for the correlator
         This class handles the prog, level, arm, and get_monitor_data commands
     """
-    def __init__(self, host, config_file):
+    def __init__(self, host, config_file, number=1):
 
         self.host = host
         self.corr = HeraCorrelator(config=config_file)
+        self.number = number
         self.mansync = False
         if self.corr.config['sync']=='manual':
             self.mansync = True
@@ -61,8 +62,35 @@ class dsaX_snap:
         """ tests reception of command
         """
 
+        self.simplemon()
         self.feng.logger.info("test successful")
 
+    def simplemon(self):
+        """ send prog, init, armed_mjd to etcd
+        """
+
+        all_mon_data = {}
+        cur_time = su.time_to_mjd(time.time())
+        mon_data = {}            
+
+        # common stuff
+        mon_data['time'] = cur_time        
+        mon_data['prog'] = self.programmed
+        mon_data['init'] = self.initialized
+        mon_data['armed_mjd'] = self.armed_mjd
+        mon_data['number'] = int(self.number)
+
+        try:
+            md_json = json.dumps(mon_data)
+            all_mon_data = md_json
+        except ValueError:
+            su.dprint("get_monitor_data(): JSON encode error. Check JSON. mon_data = {}".format(mon_data), 'ERR')
+            return
+        
+        return(all_mon_data)
+
+        
+        
     def progonly(self):
         """ Program SNAP, and do basic init. configure freq slots
         """
@@ -76,17 +104,21 @@ class dsaX_snap:
         self.monon = False
 
         # program the boards
-        self.feng.fpga.transport.prog_user_image()
-        self.programmed = True
+        self.programmed = False
+        self.initialized = False
+        self.armed_mjd = 55000.0
+        self.feng.fpga.transport.prog_user_image()        
         self.feng.logger.info("possibly programmed, waiting 60s to check")
         time.sleep(60)
         if self.feng.is_programmed() is False:
             self.programmed = False
             self.feng.logger.error("prog failed")
         else:
+            self.programmed = True
             self.feng.logger.info("successfully programmed")
-
+        
         self.monon = True
+        return(self.simplemon())
 
     def set_delay(self,delays=[0,0,0,0,0,0]):
         """ Set delays
@@ -130,13 +162,17 @@ class dsaX_snap:
         self.monon = False
 
         # program the boards
-        self.feng.fpga.transport.prog_user_image()
-        self.programmed = True
+        self.programmed = False
+        self.initialized = False
+        self.armed_mjd = 55000.0
+        self.feng.fpga.transport.prog_user_image()        
         self.feng.logger.info("possibly programmed, waiting 60s to check")
         time.sleep(60)
         if self.feng.is_programmed() is False:
             self.programmed = False
             self.feng.logger.error("prog failed")
+        else:
+            self.programmed = True
 
         # do the init
         self.feng.logger.info("programmed - now initializing")
@@ -177,10 +213,10 @@ class dsaX_snap:
         self.feng.eth.set_port(dest_port)
 
         self.feng.logger.info('Configured frequency slots')
-
         
         self.monon = True
-
+        return(self.simplemon())
+        
     def prong(self):
         """ Do basic init. Configure freq slots
         """
@@ -193,6 +229,8 @@ class dsaX_snap:
         # turn off monitoring
         self.monon = False
 
+        self.initialized = False
+        self.programmed = True
         if self.feng.is_programmed() is False:
             self.programmed = False
             self.feng.logger.error("prog failed")
@@ -236,10 +274,9 @@ class dsaX_snap:
         self.feng.eth.set_port(dest_port)
 
         self.feng.logger.info('Configured frequency slots')
-
         
         self.monon = True
-
+        return(self.simplemon())
         
     def arm(self):
         """ 
@@ -276,7 +313,7 @@ class dsaX_snap:
         self.armed_mjd = su.time_to_mjd(sync_time)
         time.sleep(3)
         self.monon = True
-        
+        return(self.simplemon())
         
     def level(self):
         """ Flattens the bandpass using the eq_coeffs. 
@@ -285,21 +322,21 @@ class dsaX_snap:
 
         ### TODO: multithread this
 
-        try:
-            a = self.feng.eth.get_status()['tx_ctr']; time.sleep(1); b = feng.eth.get_status()['tx_ctr']
-        except:
-            self.feng.logger.error("cannot tell if TX is on: "+feng.fpga.host)
-            return()
-        if (b-a) == 0:
-            self.feng.logger.error("TX is off: "+self.feng.fpga.host)
-            return()
+        #try:
+        #    a = self.feng.eth.get_status()['tx_ctr']; time.sleep(1); b = feng.eth.get_status()['tx_ctr']
+        #except:
+        #    self.feng.logger.error("cannot tell if TX is on: "+feng.fpga.host)
+        #    return()
+        #if (b-a) == 0:
+        #    self.feng.logger.error("TX is off: "+self.feng.fpga.host)
+        #    return()
             
         for st in range(6):
                 
             bp = np.real(self.feng.corr.get_new_corr(int(st),int(st)))
             bp[np.where(bp==0.0)] = np.median(bp)
             try:
-                coeffs = 50.*np.median(bp)/bp                
+                coeffs = 15.*np.median(bp)/bp                
                 self.feng.eq.set_coeffs(int(st),coeffs)
                 self.feng.logger.info("Set coeffs for stream "+str(st))
             except:
@@ -330,6 +367,14 @@ class dsaX_snap:
             return -1
 
         self.ismon = True
+
+        if self.programmed is False:
+            self.ismon = False
+            return(self.simplemon())
+        if self.initialized is False:
+            self.ismon = False
+            return(self.simplemon())
+        
         
         all_mon_data = {}
         cur_time = su.time_to_mjd(time.time())
@@ -344,6 +389,7 @@ class dsaX_snap:
         mon_data['init'] = self.initialized
         mon_data['armed_mjd'] = self.armed_mjd
         mon_data['level_mjd'] = self.level_mjd
+        mon_data['number'] = int(self.number)
         mon_data['sim'] = False
 
         # per-SNAP stuff
@@ -396,18 +442,18 @@ class dsaX_snap:
         #mon_data['eth_tx_ctr'] = eth_status['tx_ctr']
         #mon_data['eth_tx_of'] = eth_status['tx_of']
         #mon_data['eth_tx_vld'] = eth_status['tx_vld']
-        mon_data['ant0_A_bp'] = bp0
-        mon_data['ant0_B_bp'] = bp1
-        mon_data['ant1_A_bp'] = bp2
-        mon_data['ant1_B_bp'] = bp3
-        mon_data['ant2_A_bp'] = bp4
-        mon_data['ant2_B_bp'] = bp5
-        mon_data['ant0_A_h'] = h0
-        mon_data['ant0_B_h'] = h1
-        mon_data['ant1_A_h'] = h2
-        mon_data['ant1_B_h'] = h3
-        mon_data['ant2_A_h'] = h4
-        mon_data['ant2_B_h'] = h5
+        #mon_data['ant0_A_bp'] = bp0
+        #mon_data['ant0_B_bp'] = bp1
+        #mon_data['ant1_A_bp'] = bp2
+        #mon_data['ant1_B_bp'] = bp3
+        #mon_data['ant2_A_bp'] = bp4
+        #mon_data['ant2_B_bp'] = bp5
+        #mon_data['ant0_A_h'] = h0
+        #mon_data['ant0_B_h'] = h1
+        #mon_data['ant1_A_h'] = h2
+        #mon_data['ant1_B_h'] = h3
+        #mon_data['ant2_A_h'] = h4
+        #mon_data['ant2_B_h'] = h5
         
         self.ismon = False
         
