@@ -330,13 +330,29 @@ class dsaX_snap:
         #if (b-a) == 0:
         #    self.feng.logger.error("TX is off: "+self.feng.fpga.host)
         #    return()
-            
+
+        self.feng.corr.set_acc_len(50000)
+        self.feng.logger.info("Set acc len to 50k")
+        
         for st in range(6):
-                
-            bp = np.real(self.feng.corr.get_new_corr(int(st),int(st)))
-            bp[np.where(bp==0.0)] = np.median(bp)
+
+            data = np.zeros(1024)
+            coeffs = 30. + data
             try:
-                coeffs = 15.*np.median(bp)/bp                
+                self.feng.eq.set_coeffs(int(st),coeffs)
+                self.feng.logger.info("Set initial coeffs for stream "+str(st))
+            except:
+                self.feng.logger.error("couldn't set initial coeffs for stream "+str(st))
+                
+            for i in range(1):
+                bp = np.real(self.feng.corr.get_new_corr(int(st),int(st)))
+                bp[np.where(bp==0.0)] = np.median(bp)
+                data += bp                
+            try:
+                data = np.sqrt(data)
+                #for i in range(1024):
+                #    self.feng.logger.info("coeff "+str(data[i]))
+                coeffs = 30.*np.median(data)/data
                 self.feng.eq.set_coeffs(int(st),coeffs)
                 self.feng.logger.info("Set coeffs for stream "+str(st))
             except:
@@ -357,7 +373,7 @@ class dsaX_snap:
         self.feng.logger.info("process: cmd= {}".format(cmd))
         cmd in self.known_commands and self.known_commands[cmd]()
 
-    def get_monitor_data(self):
+    def get_all_monitor_data(self):
         """ Return monitor data in JSON format
             Returns a dictionary of JSON strings, one for each feng. 
             Some information is common to all fengs. 
@@ -454,6 +470,86 @@ class dsaX_snap:
         #mon_data['ant1_B_h'] = h3
         #mon_data['ant2_A_h'] = h4
         #mon_data['ant2_B_h'] = h5
+        
+        self.ismon = False
+        
+        try:
+            md_json = json.dumps(mon_data)
+            all_mon_data = md_json
+        except ValueError:
+            su.dprint("get_monitor_data(): JSON encode error. Check JSON. mon_data = {}".format(mon_data), 'ERR')
+            return
+        
+        return(all_mon_data)
+                
+    def get_monitor_data(self):
+        """ Return monitor data in JSON format
+            Returns a dictionary of JSON strings, one for each feng. 
+            Some information is common to all fengs. 
+        """
+        
+        if self.monon is False:
+            return -1
+
+        self.ismon = True
+
+        if self.programmed is False:
+            self.ismon = False
+            return(self.simplemon())
+        if self.initialized is False:
+            self.ismon = False
+            return(self.simplemon())
+        
+        
+        all_mon_data = {}
+        cur_time = su.time_to_mjd(time.time())
+
+        feng = self.feng 
+                    
+        mon_data = {}            
+
+        # common stuff
+        mon_data['time'] = cur_time        
+        mon_data['prog'] = self.programmed
+        mon_data['init'] = self.initialized
+        mon_data['armed_mjd'] = self.armed_mjd
+        mon_data['level_mjd'] = self.level_mjd
+        mon_data['number'] = int(self.number)
+        mon_data['sim'] = False
+
+        # per-SNAP stuff
+
+        sync_ct = feng.sync.count()
+        fpga_stats = feng.get_fpga_stats()
+        mns,pows,rmss = feng.input.get_stats(sum_cores=True)
+        ant_ids = feng.ant_indices
+        pfb_overflow = feng.pfb.is_overflowing()
+        cl1 = feng.eq.clip_count(); time.sleep(0.5); cl2 = feng.eq.clip_count()
+        clip_rate = 2.*(cl2-cl1)
+        #eth_status = feng.eth.get_status()
+        host = feng.host
+
+        mon_data['sync_ct'] = sync_ct
+        mon_data['uptime'] = fpga_stats['uptime']
+        mon_data['fpga_temp'] = fpga_stats['temp']
+        mon_data['host'] = host
+        mon_data['ant0'] = ant_ids[0]
+        mon_data['ant1'] = ant_ids[1]
+        mon_data['ant2'] = ant_ids[2]
+        mon_data['ant0_A_mn'] = mns[0]
+        mon_data['ant0_B_mn'] = mns[1]
+        mon_data['ant1_A_mn'] = mns[2]
+        mon_data['ant1_B_mn'] = mns[3]
+        mon_data['ant2_A_mn'] = mns[4]
+        mon_data['ant2_B_mn'] = mns[5] 
+        mon_data['ant0_A_rms'] = rmss[0]
+        mon_data['ant0_B_rms'] = rmss[1]
+        mon_data['ant1_A_rms'] = rmss[2]
+        mon_data['ant1_B_rms'] = rmss[3]
+        mon_data['ant2_A_rms'] = rmss[4]
+        mon_data['ant2_B_rms'] = rmss[5] 
+        mon_data['pfb_overflow'] = pfb_overflow
+        mon_data['eq_clip_rate'] = clip_rate
         
         self.ismon = False
         

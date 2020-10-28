@@ -867,7 +867,7 @@ class Eq(Block):
     def initialize(self):
         """
         Initialize block, setting coefficients to some nominally sane value.
-        Currently, this is 50.0
+        Currently, this is 60.0
         """
         for stream in range(self.nstreams):
             self.set_coeffs(stream, 30*np.ones(self.ncoeffs,dtype='>%s'%self.format))

@@ -14,6 +14,7 @@ import syslog
 from SNAP_control import dsaX_snap, helpers
 import logging
 logger = helpers.add_default_log_handlers(logging.getLogger("snapmc"))
+import numpy as np
 
 
 DBG = True
@@ -68,7 +69,7 @@ def parse_value(value):
     return rtn
 
 
-def process_command(my_snap,etcd,keym,keym2):
+def process_command(my_snap,etcd,keym,keym2,delays):
     """Etcd watch callback function. Called when values of watched
        keys are updated.
 
@@ -93,6 +94,8 @@ def process_command(my_snap,etcd,keym,keym2):
                     etcd.put(keym2, data)
                 except:
                     logger.error("Could not place full mon into etcd")
+        elif cmd['cmd']=='set_delay':
+            my_snap.set_delay(delays=delays)                        
         else:
             my_snap.process(cmd)
             data = my_snap.simplemon()
@@ -126,6 +129,9 @@ def snap_run(args):
     logger.debug("HOST SNAP: "+args.host_snap)
     logger.debug("SNAP NUMBER: "+str(args.snap_num))
 
+    delay_params = read_yaml(args.delay_config_file)
+    delays = (np.asarray(delay_params['delays']).ravel())[(args.snap_num-1)*6:(args.snap_num)*6]
+    
     logger.info("snap.py.snap_run() creatting process to handle snap: {}".format(args.host_snap))
     my_snap = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file,number=args.snap_num)
 
@@ -142,13 +148,13 @@ def snap_run(args):
     logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
 
 
-    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2))
+    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2,delays))
     watch_ids.append(watch_id)
 
     # add watch on cmd for snap 0
     cmd = etcd_params['snap_command'] + str(0)
     logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
-    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2))
+    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2,delays))
     watch_ids.append(watch_id)
 
     
@@ -162,6 +168,7 @@ def snap_run(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-df', '--delay_config_file', type=str,default='beamformer.yaml')
     parser.add_argument('-ef', '--etcd_config_file', type=str,default='etcdConfig.yaml')
     parser.add_argument('-cf', '--corr_config_file', type=str,
                         default='dsa_single.yml',
