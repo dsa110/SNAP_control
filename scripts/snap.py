@@ -130,7 +130,7 @@ def snap_run(args):
     logger.debug("SNAP NUMBER: "+str(args.snap_num))
 
     delay_params = read_yaml(args.delay_config_file)
-    delays = (np.asarray(delay_params['delays']).ravel())[(args.snap_num-1)*6:(args.snap_num)*6]
+    delays = (np.asarray(delay_params['cal_solutions']['delays']).ravel())[(args.snap_num-1)*6:(args.snap_num)*6]
     
     logger.info("snap.py.snap_run() creatting process to handle snap: {}".format(args.host_snap))
     my_snap = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file,number=args.snap_num)

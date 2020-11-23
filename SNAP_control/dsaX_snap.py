@@ -344,7 +344,7 @@ class dsaX_snap:
             except:
                 self.feng.logger.error("couldn't set initial coeffs for stream "+str(st))
                 
-            for i in range(1):
+            for i in range(4):
                 bp = np.real(self.feng.corr.get_new_corr(int(st),int(st)))
                 bp[np.where(bp==0.0)] = np.median(bp)
                 data += bp                
@@ -352,7 +352,7 @@ class dsaX_snap:
                 data = np.sqrt(data)
                 #for i in range(1024):
                 #    self.feng.logger.info("coeff "+str(data[i]))
-                coeffs = 30.*np.median(data)/data
+                coeffs = 30.*4./data
                 self.feng.eq.set_coeffs(int(st),coeffs)
                 self.feng.logger.info("Set coeffs for stream "+str(st))
             except:
