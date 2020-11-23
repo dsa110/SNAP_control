@@ -69,7 +69,7 @@ def parse_value(value):
     return rtn
 
 
-def process_command(my_snap,etcd,keym,keym2,delays):
+def process_command(my_snap,etcd,keym,keym2,delays,ants,keym3,keym4):
     """Etcd watch callback function. Called when values of watched
        keys are updated.
 
@@ -95,7 +95,13 @@ def process_command(my_snap,etcd,keym,keym2,delays):
                 except:
                     logger.error("Could not place full mon into etcd")
         elif cmd['cmd']=='set_delay':
-            my_snap.set_delay(delays=delays)                        
+            my_snap.set_delay(delays=delays)
+            try:
+                etcd.put(keym3,json.dumps({'delays':delays.tolist()}))
+                etcd.put(keym4,json.dumps({'antenna_order':ants.tolist()}))
+            except:
+                logger.error("Could not place delays / antenna_order into etcd")
+            
         else:
             my_snap.process(cmd)
             data = my_snap.simplemon()
@@ -131,6 +137,7 @@ def snap_run(args):
 
     delay_params = read_yaml(args.delay_config_file)
     delays = (np.asarray(delay_params['cal_solutions']['delays']).ravel())[(args.snap_num-1)*6:(args.snap_num)*6]
+    ants = np.asarray(delay_params['cal_solutions']['antenna_order'])
     
     logger.info("snap.py.snap_run() creatting process to handle snap: {}".format(args.host_snap))
     my_snap = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file,number=args.snap_num)
@@ -140,6 +147,8 @@ def snap_run(args):
     etcd = etcd3.client(host=etcd_host, port=etcd_port)
     watch_ids = []
     keym = '/mon/snap/' + str(args.snap_num) + '/armed_mjd'
+    keym3 = '/mon/snap/' + str(args.snap_num) + '/delays'
+    keym4 = '/mon/snap/' + str(args.snap_num) + '/antenna_order'
     keym2 = '/mon/snap/' + str(args.snap_num)
 
     
@@ -148,13 +157,13 @@ def snap_run(args):
     logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
 
 
-    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2,delays))
+    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2,delays,ants,keym3,keym4))
     watch_ids.append(watch_id)
 
     # add watch on cmd for snap 0
     cmd = etcd_params['snap_command'] + str(0)
     logger.info('snap.py.snap_run() watch cmd= {}'.format(cmd))
-    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2,delays))
+    watch_id = etcd.add_watch_callback(cmd, process_command(my_snap,etcd,keym,keym2,delays,ants,keym3,keym4))
     watch_ids.append(watch_id)
 
     
