@@ -106,11 +106,11 @@ xengines:
         chan_range: [1792, 2176]
     3:
         even:
-           ip: "10.41.0.49"
-           mac: 0x00163ee3a3d8
+           ip: "10.41.0.120"
+           mac: 0x00163e0a270e
         odd:
-           ip: "10.41.0.49"
-           mac: 0x00163ee3a3d8
+           ip: "10.41.0.120"
+           mac: 0x00163e0a270e
         chan_range: [2176, 2560]
     4:
         even:
