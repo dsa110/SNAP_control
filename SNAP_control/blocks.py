@@ -132,7 +132,7 @@ class Synth(casperfpga.synth.LMX2581):
         pass
 
 class Adc(casperfpga.snapadc.SNAPADC):
-    def __init__(self, host, sample_rate=500, num_chans=2, resolution=8, ref=10, logger=None, **kwargs):
+    def __init__(self, host, sample_rate=500, num_chans=2, resolution=8, ref=None, logger=None, **kwargs):
         """
         Instantiate an ADC block.
         

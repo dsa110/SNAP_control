@@ -115,6 +115,24 @@ def process_command(my_snap,etcd,keym,keym2,delays,ants,keym3,keym4):
                 etcd.put(keym,json.dumps({'armed_mjd':my_snap.armed_mjd}))
             except:
                 logger.error("Could not place armed_mjd into etcd")
+        if cmd['cmd']=='prog':
+            try:
+                etcd.put(keym3,json.dumps({'delays':np.zeros(6,dtype='int').tolist()}))
+                etcd.put(keym4,json.dumps({'antenna_order':ants.tolist()}))
+            except:
+                logger.error("Could not place zero_delays into etcd")
+        if cmd['cmd']=='prong':
+            try:
+                etcd.put(keym3,json.dumps({'delays':np.zeros(6,dtype='int').tolist()}))
+                etcd.put(keym4,json.dumps({'antenna_order':ants.tolist()}))
+            except:
+                logger.error("Could not place zero delays into etcd")
+        if cmd['cmd']=='progonly':
+            try:
+                etcd.put(keym3,json.dumps({'delays':np.zeros(6,dtype='int').tolist()}))
+                etcd.put(keym4,json.dumps({'antenna_order':ants.tolist()}))
+            except:
+                logger.error("Could not place zero delays into etcd")
 
         
         
