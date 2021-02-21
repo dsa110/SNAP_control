@@ -82,11 +82,11 @@ fengines:
 xengines:
     0:
         even:
-           ip: "10.41.0.114"
-           mac: 0x00163ef52d7e
+           ip: "10.41.0.69"
+           mac: 0x00163ea7d361
         odd:
-           ip: "10.41.0.114"
-           mac: 0x00163ef52d7e
+           ip: "10.41.0.69"
+           mac: 0x00163ea7d361
         chan_range: [1024, 1408]
     1:
         even:
