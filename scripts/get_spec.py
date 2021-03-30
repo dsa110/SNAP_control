@@ -15,33 +15,6 @@ from SNAP_control import dsaX_snap, helpers
 import logging
 logger = helpers.add_default_log_handlers(logging.getLogger("snapmc"))
 import numpy as np
-import matplotlib.pyplot as plt, pylab
-
-def plot_spec(s1,s2,s3,s4,s5,s6,ants,fname):
-
-    plt.figure(figsize=(15,5))
-    x = 1530. - np.arange(1024)*250./1024.
-
-    pylab.subplot(1,3,1)
-    plt.plot(x,10.*np.log10(np.abs(s1)),label=ants[0]+'B')
-    plt.plot(x,10.*np.log10(np.abs(s2)),label=ants[0]+'A')
-    plt.legend()
-    plt.ylabel('Power (rel. dB)')
-
-    pylab.subplot(1,3,2)
-    plt.plot(x,10.*np.log10(np.abs(s3)),label=ants[1]+'B')
-    plt.plot(x,10.*np.log10(np.abs(s4)),label=ants[1]+'A')
-    plt.legend()
-    plt.xlabel('Frequency (MHz)')
-
-    pylab.subplot(1,3,3)
-    plt.plot(x,10.*np.log10(np.abs(s5)),label=ants[2]+'B')
-    plt.plot(x,10.*np.log10(np.abs(s6)),label=ants[2]+'A')
-    plt.legend()
-
-    plt.close()
-    plt.savefig(fname,bbox_inches='tight')    
-    
 
 def run(args):
 
@@ -53,7 +26,7 @@ def run(args):
     s5 = d.feng.corr.get_new_corr(4,4)
     s6 = d.feng.corr.get_new_corr(5,5)
 
-    plot_spec(s1,s2,s3,s4,s5,s6,[args.a1,args.a2,args.a3],args.fname)
+    np.savez(args.fname,a1=args.a1,a2=args.a2,a3=args.a3,specs=(s1,s2,s3,s4,s5,s6))
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

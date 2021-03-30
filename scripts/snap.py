@@ -191,7 +191,7 @@ def snap_run(args):
         #md = my_snap.get_monitor_data()
         #if md!=-1:
         #    etcd.put(key, md)
-        sleep(1)
+        sleep(10)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
