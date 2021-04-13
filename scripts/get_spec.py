@@ -5,6 +5,7 @@
 import argparse
 import json
 from time import sleep
+import time
 import yaml
 import etcd3
 from os.path import dirname
@@ -26,7 +27,9 @@ def run(args):
     s5 = d.feng.corr.get_new_corr(4,4)
     s6 = d.feng.corr.get_new_corr(5,5)
 
-    np.savez(args.fname,a1=args.a1,a2=args.a2,a3=args.a3,specs=(s1,s2,s3,s4,s5,s6))
+    t = time.asctime()
+
+    np.savez(args.fname,a1=args.a1,a2=args.a2,a3=args.a3,specs=(s1,s2,s3,s4,s5,s6),time=t)
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
