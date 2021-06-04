@@ -79,6 +79,42 @@ fengines:
     10.41.0.248:
         ants: [27, 28, 29]
         sync_delay: 180
+    10.41.0.183:
+        ants: [30, 31, 32]
+        sync_delay: 10
+    10.41.0.245:
+        ants: [33, 34, 35]
+        sync_delay: 30
+    10.41.0.240:
+        ants: [36, 37, 38]
+        sync_delay: 50
+    10.41.0.242:
+        ants: [39, 40, 41]
+        sync_delay: 70
+    10.41.0.152:
+        ants: [42, 43, 44]
+        sync_delay: 90
+    10.41.0.153:
+        ants: [45, 46, 47]
+        sync_delay: 110
+    10.41.0.156:
+        ants: [48, 49, 50]
+        sync_delay: 130
+    10.41.0.157:
+        ants: [51, 52, 53]
+        sync_delay: 150
+    10.41.0.154:
+        ants: [54, 55, 56]
+        sync_delay: 170
+    10.41.0.155:
+        ants: [57, 58, 59]
+        sync_delay: 190
+    10.41.0.187:
+        ants: [60, 61, 62]
+        sync_delay: 210
+    10.41.0.184:
+        ants: [63, 64, 65]
+        sync_delay: 210
 
 
 # Data is sent assuming a total of 32 Xengines and 

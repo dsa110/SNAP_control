@@ -202,7 +202,7 @@ class Adc(casperfpga.snapadc.SNAPADC):
 
         self.selectADC()
         self.adc.selectInput([1,1,3,3])
-        self.set_gain(2)
+        self.set_gain(4)
         return status
 
 class Sync(Block):
@@ -671,7 +671,8 @@ class Pfb(Block):
         
     def initialize(self):
         self.write_int('ctrl', 0)
-        self.set_fft_shift(0b110111110101)
+        #self.set_fft_shift(0b110111110101)
+        self.set_fft_shift(0b1000101010101)
         self.rst_stats()
 
 class PhaseSwitch(Block):
