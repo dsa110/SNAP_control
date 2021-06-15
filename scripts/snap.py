@@ -87,6 +87,8 @@ def process_command(my_snap,etcd,keym,keym2,delays,ants,keym3,keym4):
         for key, val in cmd.items():
             logger.debug("snap.py.process_command() cmd key= {}, cmd val= {}".format(key, val))
         logger.debug("snap.py.process_command() a: cmd= {}".format(cmd))
+        if cmd['cmd']=='prog':
+            sleep(my_snap.number*0.4)
         if cmd['cmd']=='mon':
             data = my_snap.get_monitor_data()
             if data!=-1:
