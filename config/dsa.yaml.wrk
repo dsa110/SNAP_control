@@ -124,131 +124,131 @@ fengines:
 xengines:
     0:
         even:
-           ip: "10.41.0.91"
-           mac: 0x00163e3ded52
+           ip: "10.41.0.114"
+           mac: 0x00163ef52d7e
         odd:
-           ip: "10.41.0.91"
-           mac: 0x00163e3ded52
+           ip: "10.41.0.114"
+           mac: 0x00163ef52d7e
         chan_range: [1024, 1408]
     1:
         even:
-           ip: "10.41.0.117"
-           mac: 0x00163e2066cc
+           ip: "10.41.0.87"
+           mac: 0x00163e166938
         odd:
-           ip: "10.41.0.117"
-           mac: 0x00163e2066cc
+           ip: "10.41.0.87"
+           mac: 0x00163e166938
         chan_range: [1408, 1792]
     2:
         even:
-           ip: "10.41.0.79"
-           mac: 0x00163efc9f0a
+           ip: "10.41.0.91"
+           mac: 0x00163e3ded52
         odd:
-           ip: "10.41.0.79"
-           mac: 0x00163efc9f0a
+           ip: "10.41.0.91"
+           mac: 0x00163e3ded52
         chan_range: [1792, 2176]
     3:
         even:
-           ip: "10.41.0.58"
-           mac: 0x00163eaf746b
+           ip: "10.41.0.117"
+           mac: 0x00163e2066cc
         odd:
-           ip: "10.41.0.58"
-           mac: 0x00163eaf746b
+           ip: "10.41.0.117"
+           mac: 0x00163e2066cc
         chan_range: [2176, 2560]
     4:
         even:
-           ip: "10.41.0.116"
-           mac: 0x00163e88930b
+           ip: "10.41.0.79"
+           mac: 0x00163efc9f0a
         odd:
-           ip: "10.41.0.116"
-           mac: 0x00163e88930b
+           ip: "10.41.0.79"
+           mac: 0x00163efc9f0a
         chan_range: [2560, 2944]
     5:
         even:
-           ip: "10.41.0.99"
-           mac: 0x00163eb9caee
+           ip: "10.41.0.58"
+           mac: 0x00163eaf746b
         odd:
-           ip: "10.41.0.99"
-           mac: 0x00163eb9caee
+           ip: "10.41.0.58"
+           mac: 0x00163eaf746b
         chan_range: [2944, 3328]
     6:
         even:
-           ip: "10.41.0.122"
-           mac: 0x00163e58c973
+           ip: "10.41.0.116"
+           mac: 0x00163e88930b
         odd:
-           ip: "10.41.0.122"
-           mac: 0x00163e58c973
+           ip: "10.41.0.116"
+           mac: 0x00163e88930b
         chan_range: [3328, 3712]
     7:
         even:
-           ip: "10.41.0.121"
-           mac: 0x00163e47ccdf
+           ip: "10.41.0.99"
+           mac: 0x00163eb9caee
         odd:
-           ip: "10.41.0.121"
-           mac: 0x00163e47ccdf
+           ip: "10.41.0.99"
+           mac: 0x00163eb9caee
         chan_range: [3712, 4096]
     8:
         even:
-           ip: "10.41.0.61"
-           mac: 0x00163ef08654
+           ip: "10.41.0.66"
+           mac: 0x00163e86502f
         odd:
-           ip: "10.41.0.61"
-           mac: 0x00163ef08654
+           ip: "10.41.0.66"
+           mac: 0x00163e86502f
         chan_range: [4096, 4480]
     9:
         even:
-           ip: "10.41.0.115"
-           mac: 0x00163e015cb3
+           ip: "10.41.0.122"
+           mac: 0x00163e58c973
         odd:
-           ip: "10.41.0.115"
-           mac: 0x00163e015cb3
+           ip: "10.41.0.122"
+           mac: 0x00163e58c973
         chan_range: [4480, 4864]
     10:
         even:
-           ip: "10.41.0.113"
-           mac: 0x00163ec29e6a
+           ip: "10.41.0.121"
+           mac: 0x00163e47ccdf
         odd:
-           ip: "10.41.0.113"
-           mac: 0x00163ec29e6a
+           ip: "10.41.0.121"
+           mac: 0x00163e47ccdf
         chan_range: [4864, 5248]
     11:
         even:
-           ip: "10.41.0.83"
-           mac: 0x00163ec4b3e4
+           ip: "10.41.0.61"
+           mac: 0x00163ef08654
         odd:
-           ip: "10.41.0.83"
-           mac: 0x00163ec4b3e4
+           ip: "10.41.0.61"
+           mac: 0x00163ef08654
         chan_range: [5248, 5632]
     12:
         even:
-           ip: "10.41.0.92"
-           mac: 0x00163e992926
+           ip: "10.41.0.60"
+           mac: 0x00163e0821e8
         odd:
-           ip: "10.41.0.92"
-           mac: 0x00163e992926
+           ip: "10.41.0.60"
+           mac: 0x00163e0821e8
         chan_range: [5632, 6016]
     13:
         even:
-           ip: "10.41.0.103"
-           mac: 0x00163e84c6b3
+           ip: "10.41.0.115"
+           mac: 0x00163e015cb3
         odd:
-           ip: "10.41.0.103"
-           mac: 0x00163e84c6b3
+           ip: "10.41.0.115"
+           mac: 0x00163e015cb3
         chan_range: [6016, 6400]
     14:
         even:
-           ip: "10.41.0.82"
-           mac: 0x00163e54d783
+           ip: "10.41.0.113"
+           mac: 0x00163ec29e6a
         odd:
-           ip: "10.41.0.82"
-           mac: 0x00163e54d783
+           ip: "10.41.0.113"
+           mac: 0x00163ec29e6a
         chan_range: [6400, 6784]
     15:
         even:
-           ip: "10.41.0.71"
-           mac: 0x00163e191750
+           ip: "10.41.0.83"
+           mac: 0x00163ec4b3e4
         odd:
-           ip: "10.41.0.71"
-           mac: 0x00163e191750
+           ip: "10.41.0.83"
+           mac: 0x00163ec4b3e4
         chan_range: [6784, 7168]
 
 

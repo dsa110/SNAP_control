@@ -12,6 +12,7 @@ import os
 import snap_util as su
 from snap_fengine import SnapFengine
 from hera_corr import HeraCorrelator
+from scipy.signal import savgol_filter
 
 class dsaX_snap:
     """  is a class for handling SNAP configuration
@@ -337,7 +338,7 @@ class dsaX_snap:
         for st in range(6):
 
             data = np.zeros(1024)
-            coeffs = 30. + data
+            coeffs = 2.5 + data
             try:
                 self.feng.eq.set_coeffs(int(st),coeffs)
                 self.feng.logger.info("Set initial coeffs for stream "+str(st))
@@ -349,10 +350,11 @@ class dsaX_snap:
                 bp[np.where(bp==0.0)] = np.median(bp)
                 data += bp                
             try:
+                data = savgol_filter(data,41,3)
                 data = np.sqrt(data)
                 #for i in range(1024):
                 #    self.feng.logger.info("coeff "+str(data[i]))
-                coeffs = 30.*4./data
+                coeffs = 2.5*4./data
                 self.feng.eq.set_coeffs(int(st),coeffs)
                 self.feng.logger.info("Set coeffs for stream "+str(st))
             except:
