@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: SNAP-control
+Version: 0.9.0
+Summary: Python libraries and scripts to control DSA-110 SNAPs
+Home-page: https://github.com/dsa110/SNAP_control
+Author: Rick Hobbs, Vikram Ravi
+Author-email: vikram@caltech.edu
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
