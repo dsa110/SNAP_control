@@ -24,7 +24,7 @@ livereload==2.5.1
 MarkupSafe==1.0
 matplotlib==2.0.2
 mock==2.0.0
-numpy==1.13.3
+numpy==1.22.0
 odict==1.6.2
 pathlib2==2.3.0
 pathtools==0.1.2
