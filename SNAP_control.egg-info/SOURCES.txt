@@ -13,5 +13,8 @@ SNAP_control.egg-info/SOURCES.txt
 SNAP_control.egg-info/dependency_links.txt
 SNAP_control.egg-info/top_level.txt
 scripts/get_spec.py
+scripts/get_spec_mult.py
+scripts/get_spec_tstamp.py
+scripts/prog_fpga.py
 scripts/setup_snap.py
 scripts/snap.py

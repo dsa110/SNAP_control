@@ -43,76 +43,77 @@ initialize: True
 eth: True
 
 # Specify a full path to an F-Engine fpg files
-fpgfile: '/home/ubuntu/proj/dsa110-shell/SNAP_control/config/snap_fengine_nophase_2020-08-13_0941.fpg'
+#fpgfile: '/home/ubuntu/proj/dsa110-shell/SNAP_control/config/snap_fengine_nophase_2020-08-13_0941.fpg'
+fpgfile: '/home/ubuntu/proj/dsa110-shell/SNAP_control/config/snap_fengine_nophase_2022-03-16_1517.fpg'
 
 # Destination port for SNAP data
 dest_port: 4011
 
 fengines:
-    10.41.0.156:
+    10.41.0.187:
         ants: [0, 1, 2]
         sync_delay: 0
-    10.41.0.177:
+    10.41.0.183:
         ants: [3, 4, 5]
         sync_delay: 20
-    10.41.0.195:
+    10.41.0.190:
         ants: [6, 7, 8]
         sync_delay: 40
-    10.41.0.139:
+    10.41.0.189:
         ants: [9, 10, 11]
         sync_delay: 60
-    10.41.0.201:
+    10.41.0.186:
         ants: [12, 13, 14]
         sync_delay: 80
-    10.41.0.163:
+    10.41.0.240:
         ants: [15, 16, 17]
         sync_delay: 100
-    10.41.0.136:
+    10.41.0.242:
         ants: [18, 19, 20]
         sync_delay: 120
-    10.41.0.137:
+    10.41.0.188:
         ants: [21, 22, 23]
         sync_delay: 140
-    10.41.0.244:
+    10.41.0.179:
         ants: [24, 25, 26]
         sync_delay: 160
-    10.41.0.192:
+    10.41.0.185:
         ants: [27, 28, 29]
         sync_delay: 180
-    10.41.0.196:
+    10.41.0.157:
         ants: [30, 31, 32]
         sync_delay: 10
-    10.41.0.147:
+    10.41.0.178:
         ants: [33, 34, 35]
         sync_delay: 30
-    10.41.0.194:
+    10.41.0.149:
         ants: [36, 37, 38]
         sync_delay: 50
-    10.41.0.197:
+    10.41.0.155:
         ants: [39, 40, 41]
         sync_delay: 70
-    10.41.0.135:
+    10.41.0.148:
         ants: [42, 43, 44]
         sync_delay: 90
-    10.41.0.142:
+    10.41.0.154:
         ants: [45, 46, 47]
         sync_delay: 110
-    10.41.0.184:
+    10.41.0.174:
         ants: [48, 49, 50]
         sync_delay: 130
-    10.41.0.200:
+    10.41.0.152:
         ants: [51, 52, 53]
         sync_delay: 150
-    10.41.0.198:
+    10.41.0.153:
         ants: [54, 55, 56]
         sync_delay: 170
-    10.41.0.140:
+    10.41.0.197:
         ants: [57, 58, 59]
         sync_delay: 190
-    10.41.0.202:
+    10.41.0.245:
         ants: [60, 61, 62]
         sync_delay: 210
-    10.41.0.185:
+    10.41.0.175:
         ants: [63, 64, 65]
         sync_delay: 210
 
@@ -148,11 +149,11 @@ xengines:
         chan_range: [1792, 2176]
     3:
         even:
-           ip: "10.41.0.58"
-           mac: 0x00163eaf746b
+           ip: "10.41.0.127"
+           mac: 0x00163e8b37c1
         odd:
-           ip: "10.41.0.58"
-           mac: 0x00163eaf746b
+           ip: "10.41.0.127"
+           mac: 0x00163e8b37c1
         chan_range: [2176, 2560]
     4:
         even:

@@ -20,11 +20,12 @@ class dsaX_snap:
         config_file is the config_file for the correlator
         This class handles the prog, level, arm, and get_monitor_data commands
     """
-    def __init__(self, host, config_file, number=1):
+    def __init__(self, host, config_file, number=1, port_offset=0):
 
         self.host = host
         self.corr = HeraCorrelator(config=config_file)
         self.number = number
+        self.port_offset=port_offset
         self.mansync = False
         if self.corr.config['sync']=='manual':
             self.mansync = True
@@ -205,7 +206,7 @@ class dsaX_snap:
             ip_odd = (ip[0]<<24) + (ip[1]<<16) + (ip[2]<<8) + ip[3]
 
             self.feng.logger.info('%s: Setting Xengine %d: chans %d-%d: %s (even) / %s (odd)' % (self.feng.fpga.host, xn, chans[0], chans[-1], xparams['even']['ip'], xparams['odd']['ip']))
-            source_port = self.corr.config['fengines'][self.feng.host].get('source_port', dest_port + 1)            
+            source_port = self.corr.config['fengines'][self.feng.host].get('source_port', dest_port + 1 + self.port_offset)            
             self.feng.packetizer.assign_slot(xn, chans, [ip_even,ip_odd], self.feng.reorder, self.feng.ant_indices[0])
             self.feng.eth.add_arp_entry(ip_even,xparams['even']['mac'])
             self.feng.eth.add_arp_entry(ip_odd,xparams['odd']['mac'])
@@ -356,11 +357,14 @@ class dsaX_snap:
                 #    self.feng.logger.info("coeff "+str(data[i]))
                 coeffs = 2.5*4./data
                 coeffs[410:490] = np.median(coeffs[410:490]) # for HI
+                #self.feng.logger.info("min "+str(coeffs.min())+" max "+str(coeffs.max())+" median "+str(coeffs.median()))
+                self.feng.logger.error("min "+str(coeffs.min())+" max "+str(coeffs.max()))
                 self.feng.eq.set_coeffs(int(st),coeffs)
                 self.feng.logger.info("Set coeffs for stream "+str(st))
             except:
                 self.feng.logger.error("couldn't set coeffs for stream "+str(st))
                 self.feng.logger.error("min "+str(coeffs.min())+" max "+str(coeffs.max()))
+                self.feng.eq.set_coeffs(int(st),2.5+np.zeros(1024))
                     
 
         self.level_mjd = su.time_to_mjd(time.time())

@@ -105,6 +105,8 @@ def process_command(my_snap,etcd,keym,keym2,delays,ants,keym3,keym4):
                 logger.error("Could not place delays / antenna_order into etcd")
             
         else:
+            # comment out for arm
+            #sleep(my_snap.number*1.)
             my_snap.process(cmd)
             data = my_snap.simplemon()
             try:
@@ -160,7 +162,7 @@ def snap_run(args):
     ants = np.asarray(delay_params['cal_solutions']['antenna_order'])
     
     logger.info("snap.py.snap_run() creatting process to handle snap: {}".format(args.host_snap))
-    my_snap = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file,number=args.snap_num)
+    my_snap = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file,number=args.snap_num,port_offset=args.port_offset)
 
     etcd_host, etcd_port = parse_endpoint(etcd_params['endpoints'])
     logger.info("snap.py.snap_run() etcd host={}, etcd port={}".format(etcd_host, etcd_port))
@@ -204,5 +206,6 @@ if __name__ == '__main__':
                         help='corr parameters')
     parser.add_argument('-hs', '--host_snap', type=str, help='SNAP host name')
     parser.add_argument('-n', '--snap_num', type=int, help='SNAP number in etcd')
+    parser.add_argument('-p', '--port_offset', type=int, help='Offset of source port')
     the_args = parser.parse_args()
     snap_run(the_args)
