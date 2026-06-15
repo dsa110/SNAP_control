@@ -20,15 +20,16 @@ import numpy as np
 def run(args):
 
     d = dsaX_snap.dsaX_snap(args.host_snap,args.corr_config_file,number=1)
-    s1 = d.feng.corr.get_new_corr(0,2)
+    d.feng.corr.set_acc_len(5000)
+    s1 = d.feng.corr.get_new_corr(0,0)
     a = d.feng.input.get_adc_snapshot(0)    
-    s2 = d.feng.corr.get_new_corr(1,3)
-    s3 = d.feng.corr.get_new_corr(0,4)
+    s2 = d.feng.corr.get_new_corr(1,1)
+    s3 = d.feng.corr.get_new_corr(2,2)
     b = d.feng.input.get_adc_snapshot(1)    
-    s4 = d.feng.corr.get_new_corr(1,5)
-    s5 = d.feng.corr.get_new_corr(2,4)
+    s4 = d.feng.corr.get_new_corr(3,3)
+    s5 = d.feng.corr.get_new_corr(4,4)
     c = d.feng.input.get_adc_snapshot(2)    
-    s6 = d.feng.corr.get_new_corr(3,5)
+    s6 = d.feng.corr.get_new_corr(5,5)
 
     t = time.asctime()
 

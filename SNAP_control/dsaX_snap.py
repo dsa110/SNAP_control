@@ -110,8 +110,8 @@ class dsaX_snap:
         self.initialized = False
         self.armed_mjd = 55000.0
         self.feng.fpga.transport.prog_user_image()        
-        self.feng.logger.info("possibly programmed, waiting 60s to check")
-        time.sleep(60)
+        self.feng.logger.info("possibly programmed, waiting 40s to check")
+        time.sleep(40)
         if self.feng.is_programmed() is False:
             self.programmed = False
             self.feng.logger.error("prog failed")
@@ -194,7 +194,7 @@ class dsaX_snap:
         n_xengs = self.corr.config.get('n_xengs', 16)
         chans_per_packet = self.corr.config.get('chans_per_packet', 384) # Hardcoded in firmware
         self.feng.logger.info('Configuring frequency slots for %d X-engines, %d channels per packet' % (n_xengs, chans_per_packet))
-        dest_port = self.corr.config['dest_port'] 
+        dest_port = self.corr.config['fengines'][self.feng.host]['dest_port'] 
         for xn, xparams in self.corr.config['xengines'].items():
             chan_range = xparams.get('chan_range', [xn*384, (xn+1)*384])
             chans = range(chan_range[0], chan_range[1])
@@ -255,7 +255,7 @@ class dsaX_snap:
         n_xengs = self.corr.config.get('n_xengs', 16)
         chans_per_packet = self.corr.config.get('chans_per_packet', 384) # Hardcoded in firmware
         self.feng.logger.info('Configuring frequency slots for %d X-engines, %d channels per packet' % (n_xengs, chans_per_packet))
-        dest_port = self.corr.config['dest_port'] 
+        dest_port = self.corr.config['fengines'][self.feng.host]['dest_port'] 
         for xn, xparams in self.corr.config['xengines'].items():
             chan_range = xparams.get('chan_range', [xn*384, (xn+1)*384])
             chans = range(chan_range[0], chan_range[1])
@@ -339,7 +339,7 @@ class dsaX_snap:
         for st in range(6):
 
             data = np.zeros(1024)
-            coeffs = 2.5 + data
+            coeffs = 50. + data
             try:
                 self.feng.eq.set_coeffs(int(st),coeffs)
                 self.feng.logger.info("Set initial coeffs for stream "+str(st))
@@ -349,13 +349,17 @@ class dsaX_snap:
             for i in range(4):
                 bp = np.real(self.feng.corr.get_new_corr(int(st),int(st)))
                 bp[np.where(bp==0.0)] = np.median(bp)
-                data += bp                
+                data += bp
+
+            fl = "/home/ubuntu/data/specs/spec_"+str(self.number)+"_"+str(st)+".npy"
+            np.save(fl,bp,allow_pickle=True)
+                
             try:
                 data = savgol_filter(data,41,3)
                 data = np.sqrt(data)
                 #for i in range(1024):
                 #    self.feng.logger.info("coeff "+str(data[i]))
-                coeffs = 2.5*4./data
+                coeffs = 50.*4./data
                 coeffs[410:490] = np.median(coeffs[410:490]) # for HI
                 #self.feng.logger.info("min "+str(coeffs.min())+" max "+str(coeffs.max())+" median "+str(coeffs.median()))
                 self.feng.logger.error("min "+str(coeffs.min())+" max "+str(coeffs.max()))
@@ -364,7 +368,7 @@ class dsaX_snap:
             except:
                 self.feng.logger.error("couldn't set coeffs for stream "+str(st))
                 self.feng.logger.error("min "+str(coeffs.min())+" max "+str(coeffs.max()))
-                self.feng.eq.set_coeffs(int(st),2.5+np.zeros(1024))
+                self.feng.eq.set_coeffs(int(st),50.+np.zeros(1024))
                     
 
         self.level_mjd = su.time_to_mjd(time.time())

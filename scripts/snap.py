@@ -97,6 +97,8 @@ def process_command(my_snap,etcd,keym,keym2,delays,ants,keym3,keym4):
                 except:
                     logger.error("Could not place full mon into etcd")
         elif cmd['cmd']=='set_delay':
+            sleep(my_snap.number*0.4)
+            logger.info("Setting delay for SNAP {}".format(my_snap.number))
             my_snap.set_delay(delays=delays)
             try:
                 etcd.put(keym3,json.dumps({'delays':delays.tolist()}))

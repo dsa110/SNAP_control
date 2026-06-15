@@ -683,7 +683,8 @@ class Pfb(Block):
     def initialize(self):
         self.write_int('ctrl', 0)
         #self.set_fft_shift(0b110111110101)
-        self.set_fft_shift(0b1000101010101)
+        #self.set_fft_shift(0b1000101010101)
+        self.set_fft_shift(0b1111111010101)
         self.rst_stats()
 
 class PhaseSwitch(Block):
